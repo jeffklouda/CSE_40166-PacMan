@@ -43,7 +43,14 @@ var Direction = {
   UP: 1,
   DOWN: -1,
   LEFT: -2,
-  RIGHT: 2
+  RIGHT: 2,
+  getComplements: function(direction){
+    if(direction == this.UP || direction == this.DOWN){
+      return [this.LEFT, this.RIGHT];
+    }else if(direction == this.RIGHT || direction == this.LEFT){
+      return [this.UP, this.DOWN];
+    }
+  }
 }
 
 var TileType = {
@@ -67,16 +74,21 @@ class Position {
 }
 
 class Ghost {
-  constructor(position){
+  constructor(position, probability){
     this.alive = true;
     this.position = position;
     this.state = GhostState.NORMAL;
     this.direction = Direction.LEFT;
+    this.probability = probability;
   }
 
   move(game){
     if(game.map.hasIntersection(this.position)){
-      this.handleIntersection(game);
+      if (Math.random() <= this.probability){
+        this.handleIntersection(game);
+      }else{
+        this.randomMovement(game);
+      }
     }else if(game.map.hasTwoWayIntersection(this.position)){
       this.handleTwoWayIntersection(game);
     }else{
@@ -85,18 +97,103 @@ class Ghost {
   }
 
   normalMove(game){
+    var map = game.map;
+    switch(this.direction){
+      case Direction.UP:
+        this.position.x -= 1;
+        break;
+      case Direction.DOWN:
+        this.position.x += 1;
+        break;
+      case Direction.RIGHT:
+        this.position.y += 1;
+        break;
+      case Direction.LEFT:
+        this.position.y -= 1;
+        break;
+    }
+    this.checkTile(game);
   }
 
   handleTwoWayIntersection(game){
+    var validOrientations = game.map.getValidOrientations(this.position);
+    var complements = Direction.getComplements(this.direction);
 
+    for(let orientation of validOrientations){
+        if(orientation == complements[0] || orientation == complements[1]){
+          this.direction = orientation;
+          break;
+        }
+    }
+
+    this.move(game);
   }
 
   handleIntersection(game){
+    var validOrientations = game.map.getValidOrientations(this.position);
+    var distances = new Map();
+    var x = this.position.x, y = this.position.y;
+
+    validOrientations.forEach(function(direction){
+      var distance = 0;
+      switch(direction){
+        case Direction.UP:
+          distance = this.getDistanceTo(new Position(x - 1, y), game.pacman.position);
+          break;
+        case Direction.DOWN:
+          distance = this.getDistanceTo(new Position(x + 1, y), game.pacman.position);
+          break;
+        case Direction.RIGHT:
+          distance = this.getDistanceTo(new Position(x, y + 1), game.pacman.position);
+          break;
+        case Direction.LEFT:
+          distance = this.getDistanceTo(new Position(x, y - 1), game.pacman.position);
+          break;
+      }
+      distances.set(direction, distance);
+    }.bind(this));
+
+    this.direction = getMinimumDirection(distances);
+
+    this.move(game);
+  }
+
+  randomMovement(){
 
   }
 
   switchDirection(){
     this.direction *= (-1);
+  }
+
+  startBlueMode(){
+
+  }
+
+  checkTile(game){
+    if(game.ghostInPosition(this.position)){
+      this.switchDirection();
+      this.move(game);
+      this.move(game);
+    }
+
+    if(game.pacManInPosition()){
+      game.pacman.loseLife();
+    }
+  }
+
+  getDistanceTo(first, second){
+    return Math.pow(first.x - second.x, 2) + Math.pow(first.y - second.y, 2);
+  }
+
+  getMinimumDirection(distances){
+    var direction = null;
+    var minDistance = Infinity;
+    for(let [k,v] of distances){
+      if(v < minDistance) direction = k;
+    }
+
+    return direction;
   }
 
 }
@@ -147,11 +244,29 @@ class Map {
   }
 
   hasTwoWayIntersection(position){
-    return true;
+    var freeBlocks = 0, x = position.x, y = position.y;
+    if (this.board[x+1][y].type == TileType.NORMAL) freeBlocks += 1;
+    if (this.board[x-1][y].type == TileType.NORMAL) freeBlocks += 1;
+    if (this.board[x][y+1].type == TileType.NORMAL) freeBlocks += 1;
+    if (this.board[x][y-1].type == TileType.NORMAL) freeBlocks += 1;
+
+    return freeBlocks == 2;
   }
 
   hasIntersection(position){
     return this.board[position.x][position.y].type == TileType.INTERSECTION;
+  }
+
+  getValidOrientations(position){
+    var valid = [];
+    var x = position.x, y = position.y;
+
+    if (this.board[x+1][y].type == TileType.NORMAL) valid.add(Direction.DOWN);
+    if (this.board[x-1][y].type == TileType.NORMAL) valid.add(Direction.UP);
+    if (this.board[x][y+1].type == TileType.NORMAL) valid.add(Direction.RIGHT);
+    if (this.board[x][y-1].type == TileType.NORMAL) valid.add(Direction.LEFT);
+
+    return valid;
   }
 };
 
@@ -196,13 +311,17 @@ class PacMan {
     game.updateTile(this.position);
   }
 
+  loseLife(){
+    
+  }
+
 }
 
 class Game {
   constructor(prototype){
     this.map = new Map(prototype);
     this.pacman = new PacMan(new Position(12, 23));
-    this.ghosts = [new Ghost(new Position(13, 11))];
+    this.ghosts = [new Ghost(new Position(13, 11), 1)];
     this.moveDirection = Direction.RIGHT;
     this.score = 0;
   }
@@ -237,7 +356,13 @@ class Game {
   updateTile(position){
     if(this.map.board[position.x][position.y].content == TileContents.DOT){
       this.map.board[position.x][position.y].content = TileContents.EMPTY;
-      game.score += 1;
+      game.score += 10;
+    }else if(this.map.board[position.x][position.y].content == TileContents.PELLET){
+      this.map.board[position.x][position.y].content = TileContents.EMPTY;
+      game.score += 50;
+      this.ghosts.forEach(function(ghost){
+        ghost.startBlueMode();
+      });
     }
   }
 
