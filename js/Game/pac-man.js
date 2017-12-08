@@ -80,6 +80,7 @@ class Ghost {
     this.state = GhostState.NORMAL;
     this.direction = Direction.LEFT;
     this.probability = probability;
+    this.counter = 0;
   }
 
   move(game){
@@ -126,7 +127,7 @@ class Ghost {
         }
     }
 
-    this.move(game);
+    this.normalMove(game);
   }
 
   handleIntersection(game){
@@ -153,9 +154,10 @@ class Ghost {
       distances.set(direction, distance);
     }.bind(this));
 
-    this.direction = getMinimumDirection(distances);
+    if(this.state == GhostState.NORMAL) this.direction = this.getMinDirection(distances);
+    else if(this.state == GhostState.BLUE) this.direction = this.getMaxDirection(distances);
 
-    this.move(game);
+    this.normalMove(game);
   }
 
   randomMovement(){
@@ -167,30 +169,59 @@ class Ghost {
   }
 
   startBlueMode(){
+    this.state = GhostState.BLUE;
+  }
 
+  updateCounter(){
+    if(this.state == GhostState.BLUE) this.counter += 1;
+    if(this.counter == 50){
+      this.counter == 0;
+      this.state = GhostState.NORMAL;
+    }
   }
 
   checkTile(game){
-    if(game.ghostInPosition(this.position)){
+    if(game.ghostInPosition(this.position, this).bool){
       this.switchDirection();
       this.move(game);
       this.move(game);
     }
 
-    if(game.pacManInPosition()){
-      game.pacman.loseLife();
+    if(game.pacManInPosition(this.position)){
+      if(this.state != GhostState.BLUE) game.pacman.loseLife();
+      else this.loseLife();
     }
+  }
+
+  loseLife(){
+    this.alive = false;
   }
 
   getDistanceTo(first, second){
     return Math.pow(first.x - second.x, 2) + Math.pow(first.y - second.y, 2);
   }
 
-  getMinimumDirection(distances){
+  getMinDirection(distances){
     var direction = null;
     var minDistance = Infinity;
     for(let [k,v] of distances){
-      if(v < minDistance) direction = k;
+      if(v < minDistance) {
+        direction = k;
+        minDistance = v;
+      }
+    }
+
+    return direction;
+  }
+
+  getMaxDirection(distances){
+    var direction = null;
+    var maxDistance = -1;
+    for(let [k,v] of distances){
+      if(v > maxDistance){
+        direction = k;
+        maxDistance = v;
+      }
     }
 
     return direction;
@@ -205,7 +236,7 @@ class Tile{
   }
 }
 
-class Map {
+class GameMap {
   constructor(boardPrototype){
     var boardInfo = this.buildBoard(boardPrototype);
     this.board = boardInfo.board;
@@ -261,10 +292,10 @@ class Map {
     var valid = [];
     var x = position.x, y = position.y;
 
-    if (this.board[x+1][y].type == TileType.NORMAL) valid.add(Direction.DOWN);
-    if (this.board[x-1][y].type == TileType.NORMAL) valid.add(Direction.UP);
-    if (this.board[x][y+1].type == TileType.NORMAL) valid.add(Direction.RIGHT);
-    if (this.board[x][y-1].type == TileType.NORMAL) valid.add(Direction.LEFT);
+    if (this.board[x+1][y].type == TileType.NORMAL) valid.push(Direction.DOWN);
+    if (this.board[x-1][y].type == TileType.NORMAL) valid.push(Direction.UP);
+    if (this.board[x][y+1].type == TileType.NORMAL) valid.push(Direction.RIGHT);
+    if (this.board[x][y-1].type == TileType.NORMAL) valid.push(Direction.LEFT);
 
     return valid;
   }
@@ -275,24 +306,30 @@ class PacMan {
     this.position = position;
     this.startPosition = position;
     this.direction = Direction.RIGHT;
-    this.lives = 1;
+    this.lives = 3;
     this.alive = true;
   }
 
-  move(game){
+  move(game, direction){
     var map = game.map;
-    switch(this.direction){
+    switch(direction){
       case Direction.UP:
-        if(!map.hasWall(this.position.x - 1, this.position.y))
+        if(!map.hasWall(this.position.x - 1, this.position.y)){
           this.position.x -= 1;
+          this.direction = direction;
+        }
         break;
       case Direction.DOWN:
-        if(!map.hasWall(this.position.x + 1, this.position.y))
+        if(!map.hasWall(this.position.x + 1, this.position.y)){
           this.position.x += 1;
+          this.direction = direction;
+        }
         break;
       case Direction.RIGHT:
-        if(!map.hasWall(this.position.x, this.position.y + 1))
+        if(!map.hasWall(this.position.x, this.position.y + 1)){
           this.position.y += 1;
+          this.direction = direction;
+        }
         break;
       case Direction.LEFT:
         if(!map.hasWall(this.position.x, this.position.y - 1))
@@ -303,34 +340,42 @@ class PacMan {
   }
 
   checkTile(game){
-    if(game.ghostInPosition(this.position)){
-      this.loseLife();
-      return;
+    var ghostInPosition = game.ghostInPosition(this.position, null);
+    if(ghostInPosition.bool){
+      if(ghostInPosition.ghost.state == GhostState.BLUE){
+        ghostInPosition.ghost.loseLife();
+      }else{
+        this.loseLife();
+        return;
+      }
     }
 
     game.updateTile(this.position);
   }
 
   loseLife(){
-    
+    this.lives -= 1;
+    if (this.lives == 0) this.alive = false;
   }
 
 }
 
 class Game {
   constructor(prototype){
-    this.map = new Map(prototype);
-    this.pacman = new PacMan(new Position(12, 23));
+    this.map = new GameMap(prototype);
+    this.pacman = new PacMan(new Position(23, 12));
     this.ghosts = [new Ghost(new Position(13, 11), 1)];
     this.moveDirection = Direction.RIGHT;
     this.score = 0;
   }
 
-  update(){
-    this.pacman.move(this);
-    this.ghosts.forEach(function(ghost){
-      ghost.move(this);
-    }.bind(this));
+  update(direction){
+    if(this.pacman.alive){
+      this.pacman.move(this, direction);
+      this.ghosts.forEach(function(ghost){
+        if(ghost.alive) ghost.move(this);
+      }.bind(this));
+    }
   }
 
   setDirection(direction){
@@ -343,22 +388,23 @@ class Game {
       && (this.pacman.position.y == position.y));
   }
 
-  ghostInPosition(position){
+  ghostInPosition(position, caller){
     for(let ghost of this.ghosts){
-      if((ghost.position.x == position.x) && (ghost.position.y == position.y)){
-        return true;
+      if((caller != ghost) && (ghost.position.x == position.x) && (ghost.position.y == position.y)){
+        return {bool: true, ghost: ghost};
       }
     }
 
-    return false;
+    return {bool: false, ghost: null};
   }
 
   updateTile(position){
-    if(this.map.board[position.x][position.y].content == TileContents.DOT){
-      this.map.board[position.x][position.y].content = TileContents.EMPTY;
+    var x = position.x, y = position.y;
+    if(this.map.board[x][y].content == TileContents.DOT){
+      this.map.board[x][y].content = TileContents.EMPTY;
       game.score += 10;
-    }else if(this.map.board[position.x][position.y].content == TileContents.PELLET){
-      this.map.board[position.x][position.y].content = TileContents.EMPTY;
+    }else if(this.map.board[x][y].content == TileContents.PELLET){
+      this.map.board[x][y].content = TileContents.EMPTY;
       game.score += 50;
       this.ghosts.forEach(function(ghost){
         ghost.startBlueMode();
@@ -366,10 +412,15 @@ class Game {
     }
   }
 
+
 }
 
-var myMap = new Map(boardPrototype);
 var game = new Game(boardPrototype);
-console.log(game.pacman.position);
-game.update();
-console.log(game.pacman.position);
+for(var i = 0; i < 10000; i+=1){
+  game.update();
+  console.log("Pac-Man:", game.pacman.position);
+  game.ghosts.forEach(function(ghost){
+    console.log("Ghost:", ghost.position);
+  });
+  console.log("");
+}
