@@ -23,7 +23,7 @@ var boardPrototype = [
   [1,2,2,2,2,2,4,2,2,4,2,2,2,1,1,2,2,2,4,2,2,4,2,2,2,2,2,1],
   [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
   [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-  [1,3,2,2,1,1,4,2,2,4,2,2,2,2,2,2,2,2,4,2,2,4,1,1,2,2,3,1],
+  [1,3,2,2,1,1,4,2,2,4,2,2,4,2,2,4,2,2,4,2,2,4,1,1,2,2,3,1],
   [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
   [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
   [1,2,2,4,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
@@ -38,6 +38,13 @@ var GhostState = {
   BLUE: 2,
   ENTERING: 3
 };
+
+var GhostName = {
+  BLINKY: 1,
+  INKY: 2,
+  CLYDE: 3,
+  PINKY: 4
+}
 
 var Direction = {
   UP: 1,
@@ -308,6 +315,8 @@ class PacMan {
     this.direction = Direction.RIGHT;
     this.lives = 3;
     this.alive = true;
+    this.respawn = false;
+    this.respawnCounter = 0;
   }
 
   move(game, direction){
@@ -354,6 +363,7 @@ class PacMan {
   }
 
   loseLife(){
+    this.respawn = true;
     this.lives -= 1;
     if (this.lives == 0) this.alive = false;
   }
@@ -364,23 +374,39 @@ class Game {
   constructor(prototype){
     this.map = new GameMap(prototype);
     this.pacman = new PacMan(new Position(23, 12));
-    this.ghosts = [new Ghost(new Position(13, 11), 1)];
+    this.ghosts = [
+      new Ghost(new Position(11, 13), 1, GhostName.BLINKY),
+      //new Ghost(new Position(13, 11), 0.2, GhostName.PINKY),
+      //new Ghost(new Position(1, 11), 0.5, GhostName.INKY),
+      //new Ghost(new Position(13, 11), 0.7, GhostName.CLYDE)
+    ];
     this.moveDirection = Direction.RIGHT;
     this.score = 0;
   }
 
   update(direction){
-    if(this.pacman.alive){
+    if(this.pacman.alive && !this.pacman.respawn){
       this.pacman.move(this, direction);
+
       this.ghosts.forEach(function(ghost){
         if(ghost.alive) ghost.move(this);
       }.bind(this));
+    }else if(this.pacman.respawn){
+      this.respawn();
+    }else{
+
     }
   }
 
   setDirection(direction){
     this.moveDirection = direction;
-    this.pacman.direction = direction;
+  }
+
+  respawn(){
+    this.pacman.position = new Position(23, 12);
+    this.pacman.respawn = false;
+    this.ghosts = [new Ghost(new Position(13, 11), 1)];
+    this.moveDirection = Direction.RIGHT;
   }
 
   pacManInPosition(position){
@@ -412,12 +438,13 @@ class Game {
     }
   }
 
-
 }
 
+//****************TEST********************
+
 var game = new Game(boardPrototype);
-for(var i = 0; i < 10000; i+=1){
-  game.update();
+for(var i = 0; i < 100; i+=1){
+  game.update(Direction.RIGHT);
   console.log("Pac-Man:", game.pacman.position);
   game.ghosts.forEach(function(ghost){
     console.log("Ghost:", ghost.position);
