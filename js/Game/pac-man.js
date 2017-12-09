@@ -82,6 +82,13 @@ class Position {
   }
 }
 
+class Tile{
+  constructor(type, content){
+    this.type = type;
+    this.content = content;
+  }
+}
+
 class Ghost {
   constructor(position, probability, name, direction){
     this.alive = true;
@@ -99,7 +106,7 @@ class Ghost {
     }else if(this.state == GhostState.ENTERING){
       this.handleEntering(game);
     }else if(game.map.hasIntersection(this.position)){
-      if (Math.random() <= this.probability){
+      if ((Math.random() <= this.probability) || (this.state == GhostState.BLUE)){
         this.handleIntersection(game);
       }else{
         this.randomMovement(game);
@@ -265,13 +272,6 @@ class Ghost {
     return direction;
   }
 
-}
-
-class Tile{
-  constructor(type, content){
-    this.type = type;
-    this.content = content;
-  }
 }
 
 class GameMap {
@@ -511,13 +511,13 @@ class Game {
       });
     }
   }
-
 }
 
 //****************TEST********************
 
 var game = new Game(boardPrototype);
 for(var i = 0; i < 100; i+=1){
+  directions = [];
   game.update(Direction.RIGHT);
   console.log("Pac-Man:", game.pacman.position);
   game.ghosts.forEach(function(ghost){
@@ -525,6 +525,6 @@ for(var i = 0; i < 100; i+=1){
   });
   console.log("");
 }
-console.log(game.deployments.activeGhosts[1]);
-console.log(game.ghosts[1]);
-console.log(game.deployments.activeGhosts[1] == game.ghosts[1]);
+
+console.log("GAME CLASS: ");
+console.log(game);

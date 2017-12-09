@@ -15,7 +15,7 @@ class Ghost {
     }else if(this.state == GhostState.ENTERING){
       this.handleEntering(game);
     }else if(game.map.hasIntersection(this.position)){
-      if (Math.random() <= this.probability){
+      if ((Math.random() <= this.probability) || (this.state == GhostState.BLUE)){
         this.handleIntersection(game);
       }else{
         this.randomMovement(game);
