@@ -36,7 +36,8 @@ var boardPrototype = [
 var GhostState = {
   NORMAL: 1,
   BLUE: 2,
-  ENTERING: 3
+  ENTERING: 3,
+  WAITING: 4
 };
 
 var GhostName = {
@@ -51,6 +52,7 @@ var Direction = {
   DOWN: -1,
   LEFT: -2,
   RIGHT: 2,
+  STAY: 0,
   getComplements: function(direction){
     if(direction == this.UP || direction == this.DOWN){
       return [this.LEFT, this.RIGHT];
@@ -81,17 +83,22 @@ class Position {
 }
 
 class Ghost {
-  constructor(position, probability){
+  constructor(position, probability, name, direction){
     this.alive = true;
+    this.name = name;
     this.position = position;
-    this.state = GhostState.NORMAL;
-    this.direction = Direction.LEFT;
+    this.direction = direction;
+    this.state = (direction == Direction.STAY ? GhostState.WAITING : GhostState.NORMAL);
     this.probability = probability;
     this.counter = 0;
   }
 
   move(game){
-    if(game.map.hasIntersection(this.position)){
+    if(this.state == GhostState.WAITING){
+      return;
+    }else if(this.state == GhostState.ENTERING){
+      this.handleEntering(game);
+    }else if(game.map.hasIntersection(this.position)){
       if (Math.random() <= this.probability){
         this.handleIntersection(game);
       }else{
@@ -167,8 +174,31 @@ class Ghost {
     this.normalMove(game);
   }
 
-  randomMovement(){
+  randomMovement(game){
+    var validOrientations = game.map.getValidOrientations(this.position);
+    var currentDirIndex = validOrientations.indexOf(this.direction);
+    if (currentDirIndex > -1) {
+      validOrientations.splice(currentDirIndex, 1);
+    }
 
+    var min = 0, max = validOrientations.length -1;
+    var index = Math.floor(Math.random() * (max - min +1)) + min;
+    this.direction = validOrientations[index];
+
+    this.normalMove(game);
+  }
+
+  handleEntering(game){
+    this.position.x -= 1;
+    if(!game.map.hasBox(this.position)){
+      if(game.ghostInPosition(this.position).bool){
+        this.position.x += 1;
+      }else{
+        this.direction = Math.random() < 0.5 ? Direction.RIGHT : Direction.LEFT;
+        this.state = GhostState.NORMAL;
+        game.updateBox(this);
+      }
+    }
   }
 
   switchDirection(){
@@ -196,12 +226,13 @@ class Ghost {
 
     if(game.pacManInPosition(this.position)){
       if(this.state != GhostState.BLUE) game.pacman.loseLife();
-      else this.loseLife();
+      else this.loseLife(game);
     }
   }
 
-  loseLife(){
+  loseLife(game){
     this.alive = false;
+    game.killAndDeploy(this);
   }
 
   getDistanceTo(first, second){
@@ -279,6 +310,10 @@ class GameMap {
 
   hasWall(x, y){
     return this.board[x][y].type == TileType.WALL || this.board[x][y].type == TileType.BOX;
+  }
+
+  hasBox(position){
+    this.board[position.x][position.y].type == TileType.BOX;
   }
 
   hasTwoWayIntersection(position){
@@ -375,17 +410,25 @@ class Game {
     this.map = new GameMap(prototype);
     this.pacman = new PacMan(new Position(23, 12));
     this.ghosts = [
-      new Ghost(new Position(11, 13), 1, GhostName.BLINKY),
-      //new Ghost(new Position(13, 11), 0.2, GhostName.PINKY),
-      //new Ghost(new Position(1, 11), 0.5, GhostName.INKY),
-      //new Ghost(new Position(13, 11), 0.7, GhostName.CLYDE)
+      new Ghost(new Position(11, 13), 1, GhostName.BLINKY, Direction.LEFT),
+      new Ghost(new Position(11, 15), 0.2, GhostName.PINKY, Direction.RIGHT),
+      new Ghost(new Position(14, 13), 0.4, GhostName.INKY, Direction.STAY),
+      new Ghost(new Position(14, 15), 0.7, GhostName.CLYDE, Direction.STAY)
     ];
     this.moveDirection = Direction.RIGHT;
     this.score = 0;
+
+    this.deployments = {
+      activeGhosts: [this.ghosts[0], this.ghosts[1]],
+      inactiveGhosts: [this.ghosts[2], this.ghosts[3]],
+      returnTargets: new Map()
+    }
   }
 
   update(direction){
+    console.log(this.pacman.alive, !this.pacman.respawn, this.pacman.lives);
     if(this.pacman.alive && !this.pacman.respawn){
+      console.log("HI");
       this.pacman.move(this, direction);
 
       this.ghosts.forEach(function(ghost){
@@ -393,8 +436,6 @@ class Game {
       }.bind(this));
     }else if(this.pacman.respawn){
       this.respawn();
-    }else{
-
     }
   }
 
@@ -405,7 +446,14 @@ class Game {
   respawn(){
     this.pacman.position = new Position(23, 12);
     this.pacman.respawn = false;
-    this.ghosts = [new Ghost(new Position(13, 11), 1)];
+    this.ghosts = [
+      new Ghost(new Position(11, 13), 1, GhostName.BLINKY, Direction.LEFT),
+      new Ghost(new Position(11, 15), 0.2, GhostName.PINKY, Direction.RIGHT),
+      new Ghost(new Position(14, 13), 0.4, GhostName.INKY, Direction.STAY),
+      new Ghost(new Position(14, 15), 0.7, GhostName.CLYDE, Direction.STAY)
+    ];
+    this.deployments.activeGhosts = [this.ghosts[0], this.ghosts[1]];
+    this.deployments.inactiveGhosts = [this.ghosts[2], this.ghosts[3]];
     this.moveDirection = Direction.RIGHT;
   }
 
@@ -422,6 +470,32 @@ class Game {
     }
 
     return {bool: false, ghost: null};
+  }
+
+  killAndDeploy(ghost){
+    var i = this.deployments.activeGhosts.indexOf(ghost);
+    if (i > -1){
+      this.deployments.activeGhosts.splice(index, 1);
+    }
+
+    var j = Math.floor(Math.random() * (this.deployments.inactiveGhosts.length));
+    var newGhost = this.deployments.inactiveGhosts[j];
+    this.deployments.returnTargets.set(ghost, {target: newGhost.position, previousGhost: newGhost});
+
+    newGhost.state = GhostState.ENTERING;
+    newGhost.direction = Direction.UP;
+    this.deployments.activeGhosts.push(newGhost);
+  }
+
+  updateBox(ghost){
+    for(let [k,v] of this.deployments.returnTargets){
+      if(v.previousGhost == ghost){
+        k.position = v.target;
+        k.alive = true;
+        k.state = GhostState.WAITING;
+        k.direction = Direction.STAY;
+      }
+    }
   }
 
   updateTile(position){
@@ -451,3 +525,6 @@ for(var i = 0; i < 100; i+=1){
   });
   console.log("");
 }
+console.log(game.deployments.activeGhosts[1]);
+console.log(game.ghosts[1]);
+console.log(game.deployments.activeGhosts[1] == game.ghosts[1]);
