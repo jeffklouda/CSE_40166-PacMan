@@ -21,7 +21,6 @@ class Game {
   update(direction){
     console.log(this.pacman.alive, !this.pacman.respawn, this.pacman.lives);
     if(this.pacman.alive && !this.pacman.respawn){
-      console.log("HI");
       this.pacman.move(this, direction);
 
       this.ghosts.forEach(function(ghost){
