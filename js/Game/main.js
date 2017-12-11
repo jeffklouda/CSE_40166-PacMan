@@ -1,5 +1,5 @@
 
-var scene, camera, controls, stats;
+/*var scene, camera, controls, stats;
 var renderer;
 
 var SCREEN_WIDTH = window.innerWidth;
@@ -48,3 +48,4 @@ function render() {
     renderer.render( scene, camera );
 
 }
+*/
