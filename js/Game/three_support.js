@@ -103,7 +103,7 @@ function init() {
     board.scale.set(20, 20, 20);
     board.position.x = 23;
     board.position.z = 24.753;
-    camera.position.set (22.5, 250, 125);
+    camera.position.set (board.position.x, board.position.y + 100, board.position.z + 50);
     camera.lookAt( board.position );
     var controls = new THREE.OrbitControls (camera, renderer.domElement);
     controls.target.set(board.position.x, board.position.y, board.position.z);
