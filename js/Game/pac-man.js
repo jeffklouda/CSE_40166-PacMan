@@ -475,7 +475,7 @@ class Game {
   killAndDeploy(ghost){
     var i = this.deployments.activeGhosts.indexOf(ghost);
     if (i > -1){
-      this.deployments.activeGhosts.splice(index, 1);
+      this.deployments.activeGhosts.splice(i, 1);
     }
 
     var j = Math.floor(Math.random() * (this.deployments.inactiveGhosts.length));

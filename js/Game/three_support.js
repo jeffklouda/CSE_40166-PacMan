@@ -76,13 +76,17 @@ function init() {
     pacman0.scale.set(1.4, 1.4, 1.4);
     pacman0.position.y = 1.7;
     pacman1.scale.set(1.4, 1.4, 1.4);
-    pacman2.scale.set(3.57, 3.57, 3.57);
+    pacman2.scale.set(1.4, 1.4, 1.4);
     pacman1.position.y = 1.7;
     pacman2.position.y = 1.7;
-    inky.scale.set(3.57, 3.57, 3.57);
-    blinky.scale.set(3.57, 3.57, 3.57);
-    pinky.scale.set(3.57, 3.57, 3.57);
-    clyde.scale.set(3.57, 3.57, 3.57);
+    inky.position.y = 1.7;
+    blinky.position.y = 1.7;
+    pinky.position.y = 1.7;
+    clyde.position.y = 1.7;
+    inky.scale.set(1.4, 1.4, 1.4);
+    blinky.scale.set(1.4, 1.4, 1.4);
+    pinky.scale.set(1.4, 1.4, 1.4);
+    clyde.scale.set(1.4, 1.4, 1.4);
     initDots();
     //placeDots();
     var coords = getPositionFromArray (11, 12);
@@ -185,21 +189,60 @@ document.addEventListener('keypress', (event) => {
     }
 });
 
-function render() {
+var counter = 0;
 
-    if (Date.now()%10 == 0) {
+function render() {
+    counter++;
+    if (counter%4 == 0) {
 
         game.update(direction);
+    }
         //console.log("Pac-Man:", game.pacman.position);
         //console.log(game);
         game.ghosts.forEach(function(ghost){
-            //console.log("Ghost:", ghost.position);
+            var ghostCoords = getPositionFromArray (ghost.position.x, ghost.position.y);
+            switch (ghost.name) {
+                case GhostName.BLINKY:
+                    blinky.position.x = ghostCoords.x;
+                    blinky.position.z = ghostCoords.y;
+                    break;
+                case GhostName.INKY:
+                    inky.position.x = ghostCoords.x;
+                    inky.position.z = ghostCoords.y;
+                    break;
+                case GhostName.CLYDE:
+                    clyde.position.x = ghostCoords.x;
+                    clyde.position.z = ghostCoords.y;
+                    break;
+                case GhostName.PINKY:
+                    pinky.position.x = ghostCoords.x;
+                    pinky.position.z = ghostCoords.y;
+                    break;
+                default:
+                    break;
+            }
         });
+    var pacCoords = getPositionFromArray (game.pacman.position.x, game.pacman.position.y);
+
+    pacman0.visible = false;
+    pacman1.visible = false;
+    pacman2.visible = false;
+    switch (counter % 8) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+            pacman2.visible = true;
+            pacman2.position.x = pacCoords.x;
+            pacman2.position.z = pacCoords.y;
+            break;
+        default:
+            pacman0.visible = true;
+            pacman0.position.x = pacCoords.x;
+            pacman0.position.z = pacCoords.y;
+            break;
     }
 
-    var pacCoords = getPositionFromArray (game.pacman.position.x, game.pacman.position.y);
-    pacman0.position.x = pacCoords.x;
-    pacman0.position.z = pacCoords.y;
     stats.update();
     renderer.render( scene, camera );
 
@@ -233,17 +276,10 @@ function initDots(){
     }
 }
 
-
-DateLast = 0;
 game = new Game(boardPrototype);
 init();
-console.log(game.pacman.position);
-//pacLight = createPointLight (2, 0xffff00);
-//gLight1 = createPointLight(2, 0xff0000);
-//gLight2 = createPointLight(2, 0x00ff00);
-animate();
-//console.log("");
 
-//console.log(game.deployments.activeGhosts[1]);
-//console.log(game.ghosts[1]);
-//console.log(game.deployments.activeGhosts[1] == game.ghosts[1]);
+
+console.log(game.pacman.position);
+
+setTimeout(animate,2000);
