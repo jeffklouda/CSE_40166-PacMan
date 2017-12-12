@@ -188,19 +188,23 @@ function drawGhosts(){
       var ghostCoords = getPositionFromArray (ghost.position.x, ghost.position.y);
       switch (ghost.name) {
           case GhostName.BLINKY:
+              blinky.visible = ghost.alive;
               blinky.position.x = ghostCoords.x;
               blinky.position.z = ghostCoords.y;
               //TODO if(ghost.state == GhostState.BLUE) draw blue ghost
               break;
           case GhostName.INKY:
+              inky.visible = ghost.alive; ;
               inky.position.x = ghostCoords.x;
               inky.position.z = ghostCoords.y;
               break;
           case GhostName.CLYDE:
+              clyde.visible = ghost.alive;
               clyde.position.x = ghostCoords.x;
               clyde.position.z = ghostCoords.y;
               break;
           case GhostName.PINKY:
+              pinky.visible = ghost.alive;
               pinky.position.x = ghostCoords.x;
               pinky.position.z = ghostCoords.y;
               break;

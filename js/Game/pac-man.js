@@ -226,9 +226,7 @@ class Ghost {
 
   checkTile(game){
     if(game.ghostInPosition(this.position, this).bool){
-      this.switchDirection();
-      this.move(game);
-      this.move(game);
+      this.handleCollition(game);
     }
 
     if(game.pacManInPosition(this.position)){
@@ -270,6 +268,24 @@ class Ghost {
     }
 
     return direction;
+  }
+
+  handleCollition(game){
+    var map = game.map;
+    switch(this.direction){
+      case Direction.UP:
+        this.position.x += 1;
+        break;
+      case Direction.DOWN:
+        this.position.x -= 1;
+        break;
+      case Direction.RIGHT:
+        this.position.y -= 1;
+        break;
+      case Direction.LEFT:
+        this.position.y += 1;
+        break;
+    }
   }
 
 }
@@ -361,24 +377,33 @@ class PacMan {
         if(!map.hasWall(this.position.x - 1, this.position.y)){
           this.position.x -= 1;
           this.direction = direction;
+        }else{
+          this.move(game, this.direction);
         }
         break;
       case Direction.DOWN:
         if(!map.hasWall(this.position.x + 1, this.position.y)){
           this.position.x += 1;
           this.direction = direction;
+        }else{
+          this.move(game, this.direction);
         }
         break;
       case Direction.RIGHT:
         if(!map.hasWall(this.position.x, this.position.y + 1)){
           this.position.y += 1;
           this.direction = direction;
+        }else{
+          this.move(game, this.direction);
         }
         break;
       case Direction.LEFT:
-        if(!map.hasWall(this.position.x, this.position.y - 1))
+        if(!map.hasWall(this.position.x, this.position.y - 1)){
           this.position.y -= 1;
           this.direction = direction;
+        }else{
+          this.move(game, this.direction);
+        }
         break;
     }
     this.checkTile(game);
@@ -431,9 +456,9 @@ class Game {
 
       this.pacman.move(this, direction);
 
-      this.ghosts.forEach(function(ghost){
-        if(ghost.alive) ghost.move(this);
-      }.bind(this));
+      for(var i = 0; i < this.ghosts.length; i += 1) {
+        if(this.ghosts[i].alive) this.ghosts[i].move(this);
+      }
     }else if(this.pacman.respawn){
       this.respawn();
     }
