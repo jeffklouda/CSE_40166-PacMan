@@ -255,13 +255,17 @@ function getPositionFromArray(arrayX, arrayY) {
 }
 
 function initDots(){
+    var spriteMap = new THREE.TextureLoader().load("../textures/dot.png");
+    var spriteMaterial = new THREE.SpriteMaterial( {map: spriteMap, color: 0xffffff } );
     var gameBoard = game.map.board;
     for(var i = 0; i < gameBoard.length; i+=1){
         var row = [];
         for(var j = 0; j < gameBoard[0].length; j +=1){
             if(gameBoard[i][j].content == TileContents.DOT){
-                var sphere = new THREE.SphereGeometry( 0.4, 16, 8 );
+                /*var sphere = new THREE.SphereGeometry( 0.4, 16, 8 );
                 var dot = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial({color: 0xFFFFFF}));
+                */
+                var dot = new THREE.Sprite( spriteMaterial );
                 var coord = getPositionFromArray(i, j);
                 dot.position.x = coord.x;
                 dot.position.z = coord.y;
