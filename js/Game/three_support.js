@@ -20,9 +20,11 @@ function init() {
     scene.fog = new THREE.Fog( scene.background, 1, 5000);
     scene.add( new THREE.AmbientLight( 0x222233 ));
 
-    camera = new THREE.PerspectiveCamera( 30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
-    camera.position.set (0, 0, 250);
-
+    //camera = new THREE.PerspectiveCamera( 30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
+    //camera = new THREE.OrthographicCamera(SCREEN_WIDTH / -2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / -2, 0, 1000)
+    camera = new THREE.OrthographicCamera(-100, 100, -100, 100, 0, 1000)
+    camera.position.set (0, 250, 0);
+    camera.lookAt( scene.position );
 
 
     var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
@@ -46,6 +48,26 @@ function init() {
 
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.renderReverseSided = false;
+
+    var textureLoader = new THREE.TextureLoader( );
+    var texture = textureLoader.load( '../textures/pacman.png' );
+
+    var loader = new THREE.OBJLoader( );
+    loader.load( '../models/board.obj', function ( object ) {
+    	object.traverse( function ( child ) {
+
+    		if ( child instanceof THREE.Mesh ) {
+                child.material.side = THREE.DoubleSide;
+    			//child.material.map = texture;
+    		}
+    	} );
+        object.scale.set(50,50,50);
+    	object.position.y = 0;
+        object.position.z = 0;
+        //object.rotation.x = 1.6;
+        //object.rotation.y = 3.14;
+    	scene.add( object );
+    });
 
 }
 
@@ -103,7 +125,7 @@ document.addEventListener('keypress', (event) => {
 
 function render() {
 
-    if (Date.now()%4 == 0) {
+    if (Date.now()%10 == 0) {
 
         game.update(direction);
         //console.log("Pac-Man:", game.pacman.position);
