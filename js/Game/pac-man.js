@@ -348,7 +348,7 @@ class PacMan {
     this.position = position;
     this.startPosition = position;
     this.direction = Direction.RIGHT;
-    this.lives = 3;
+    this.lives = 5;
     this.alive = true;
     this.respawn = false;
     this.respawnCounter = 0;
@@ -378,6 +378,7 @@ class PacMan {
       case Direction.LEFT:
         if(!map.hasWall(this.position.x, this.position.y - 1))
           this.position.y -= 1;
+          this.direction = direction;
         break;
     }
     this.checkTile(game);
@@ -387,7 +388,7 @@ class PacMan {
     var ghostInPosition = game.ghostInPosition(this.position, null);
     if(ghostInPosition.bool){
       if(ghostInPosition.ghost.state == GhostState.BLUE){
-        ghostInPosition.ghost.loseLife();
+        ghostInPosition.ghost.loseLife(game);
       }else{
         this.loseLife();
         return;
@@ -426,7 +427,6 @@ class Game {
   }
 
   update(direction){
-    //console.log(this.pacman.alive, !this.pacman.respawn, this.pacman.lives);
     if(this.pacman.alive && !this.pacman.respawn){
 
       this.pacman.move(this, direction);
@@ -502,30 +502,13 @@ class Game {
     var x = position.x, y = position.y;
     if(this.map.board[x][y].content == TileContents.DOT){
       this.map.board[x][y].content = TileContents.EMPTY;
-      game.score += 10;
+      this.score += 10;
     }else if(this.map.board[x][y].content == TileContents.PELLET){
       this.map.board[x][y].content = TileContents.EMPTY;
-      game.score += 50;
+      this.score += 50;
       this.ghosts.forEach(function(ghost){
         ghost.startBlueMode();
       });
     }
   }
 }
-
-//****************TEST********************
-
-/*var game = new Game(boardPrototype);
-for(var i = 0; i < 100; i+=1){
-  directions = [];
-  game.update(Direction.RIGHT);
-  console.log("Pac-Man:", game.pacman.position);
-  game.ghosts.forEach(function(ghost){
-    console.log("Ghost:", ghost.position);
-  });
-  console.log("");
-}
-
-console.log("GAME CLASS: ");
-console.log(game);
-*/
