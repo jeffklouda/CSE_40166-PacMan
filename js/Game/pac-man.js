@@ -426,9 +426,9 @@ class Game {
   }
 
   update(direction){
-    console.log(this.pacman.alive, !this.pacman.respawn, this.pacman.lives);
+    //console.log(this.pacman.alive, !this.pacman.respawn, this.pacman.lives);
     if(this.pacman.alive && !this.pacman.respawn){
-      console.log("HI");
+
       this.pacman.move(this, direction);
 
       this.ghosts.forEach(function(ghost){
@@ -515,7 +515,7 @@ class Game {
 
 //****************TEST********************
 
-var game = new Game(boardPrototype);
+/*var game = new Game(boardPrototype);
 for(var i = 0; i < 100; i+=1){
   directions = [];
   game.update(Direction.RIGHT);
@@ -528,3 +528,4 @@ for(var i = 0; i < 100; i+=1){
 
 console.log("GAME CLASS: ");
 console.log(game);
+*/

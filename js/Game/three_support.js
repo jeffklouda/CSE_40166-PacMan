@@ -74,25 +74,50 @@ function animate() {
 
 }
 
-var DateLast, game, pacLight, gLight1, gLight2;
+var DateLast, game, pacLight, gLight1, gLight2, direction;
+
+document.addEventListener('keypress', (event) => {
+    var directionKey = event.key;
+    switch(directionKey) {
+        case 'w':
+        case 'ArrowUp':
+            direction = Direction.UP;
+            break;
+        case 'd':
+        case 'ArrowRight':
+            direction = Direction.RIGHT;
+            break;
+        case 's':
+        case 'ArrowDown':
+            direction = Direction.DOWN;
+            break;
+        case 'a':
+        case 'ArrowLeft':
+            direction = Direction.LEFT;
+            break;
+        default:
+
+    }
+    console.log(directionKey);
+});
 
 function render() {
 
     if (Date.now()%4 == 0) {
 
-        game.update(Direction.RIGHT);
-        console.log("Pac-Man:", game.pacman.position);
-        console.log(game);
+        game.update(direction);
+        //console.log("Pac-Man:", game.pacman.position);
+        //console.log(game);
         game.ghosts.forEach(function(ghost){
-            console.log("Ghost:", ghost.position);
+            //console.log("Ghost:", ghost.position);
         });
     }
-    gLight1.position.x = game.ghosts[0].position.x * 2;
-    gLight1.position.y = game.ghosts[0].position.y * 2;
-    gLight2.position.x = game.ghosts[1].position.x * 2;
-    gLight2.position.y = game.ghosts[1].position.y * 2;
-    pacLight.position.x = game.pacman.position.x * 2;
-    pacLight.position.y = game.pacman.position.y * 2;
+    gLight1.position.y = game.ghosts[0].position.x * 2;
+    gLight1.position.x = game.ghosts[0].position.y * 2;
+    gLight2.position.y = game.ghosts[1].position.x * 2;
+    gLight2.position.x = game.ghosts[1].position.y * 2;
+    pacLight.position.y = game.pacman.position.x * 2;
+    pacLight.position.x = game.pacman.position.y * 2;
     stats.update();
     renderer.render( scene, camera );
 
@@ -105,8 +130,8 @@ pacLight = createPointLight (2, 0xffff00);
 gLight1 = createPointLight(2, 0xff0000);
 gLight2 = createPointLight(2, 0x00ff00);
 animate();
-console.log("");
+//console.log("");
 
-console.log(game.deployments.activeGhosts[1]);
-console.log(game.ghosts[1]);
-console.log(game.deployments.activeGhosts[1] == game.ghosts[1]);
+//console.log(game.deployments.activeGhosts[1]);
+//console.log(game.ghosts[1]);
+//console.log(game.deployments.activeGhosts[1] == game.ghosts[1]);
