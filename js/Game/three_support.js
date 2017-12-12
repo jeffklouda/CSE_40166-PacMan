@@ -1,5 +1,8 @@
 
-var scene, camera, controls, stats;
+var scene, camera, controls, stats, loader, textureLoader;
+var board, pacman0, pacman1, pacman2, inky, blinky, pinky, clyde;
+var pellets = [];
+var dots = [];
 var renderer;
 
 var SCREEN_WIDTH = window.innerWidth;
@@ -20,16 +23,16 @@ function init() {
     scene.fog = new THREE.Fog( scene.background, 1, 5000);
     scene.add( new THREE.AmbientLight( 0x222233 ));
 
-    //camera = new THREE.PerspectiveCamera( 30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
-    //camera = new THREE.OrthographicCamera(SCREEN_WIDTH / -2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / -2, 0, 1000)
-    camera = new THREE.OrthographicCamera(-100, 100, -100, 100, 0, 1000)
-    camera.position.set (0, 250, 0);
-    camera.lookAt( scene.position );
+    camera = new THREE.PerspectiveCamera( 30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
+    //camera = new THREE.OrthographicCamera(SCREEN_WIDTH / -2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / -2, SCREEN_WIDTH / 2, 0, 500)
+    //camera = new THREE.OrthographicCamera(-140, 140, -100, 100, 1, 1000)
+    //camera.position.set (0, 250, 100);
+    //camera.lookAt( scene.position );
 
 
     var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
-    var groundMat = new THREE.MeshPhongMaterial( {color: 0xffffff, specular: 0x050505 } );
-    groundMat.color.setHSL( 0.095, 1, 0.75 );
+    var groundMat = new THREE.MeshPhongMaterial( {color: 0x000000, specular: 0xFFFFFF } );
+    groundMat.color.setRGB(0.1, 0.1,0.1);
 
     var ground = new THREE.Mesh( groundGeo, groundMat );
     ground.rotation.x = -Math.PI/2;
@@ -49,26 +52,86 @@ function init() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.renderReverseSided = false;
 
-    var textureLoader = new THREE.TextureLoader( );
-    var texture = textureLoader.load( '../textures/pacman.png' );
+    textureLoader = new THREE.TextureLoader( );
 
-    var loader = new THREE.OBJLoader( );
-    loader.load( '../models/board.obj', function ( object ) {
-    	object.traverse( function ( child ) {
+    loader = new THREE.OBJLoader( );
+    var board;
+    loadObject('board', '../models/board2.obj', '../textures/board.png');
+    loadObject('pacman0', '../models/pacman0.obj', '../textures/pacman.png');
+    loadObject('pacman1', '../models/pacman1.obj', '../textures/pacman.png');
+    loadObject('pacman2', '../models/pacman2.obj', '../textures/pacman.png');
+    loadObject('inky', '../models/ghost.obj', '../textures/inky.png');
+    loadObject('blinky', '../models/ghost.obj', '../textures/blinky.png');
+    loadObject('pinky', '../models/ghost.obj', '../textures/pinky.png');
+    loadObject('clyde', '../models/ghost.obj', '../textures/clyde.png');
+    setTimeout ( function() {
+    board = scene.getObjectByName('board');
+    pacman0 = scene.getObjectByName('pacman0');
+    pacman1 = scene.getObjectByName('pacman1');
+    pacman2 = scene.getObjectByName('pacman2');
+    inky = scene.getObjectByName('inky');
+    blinky = scene.getObjectByName('blinky');
+    pinky = scene.getObjectByName('pinky');
+    clyde = scene.getObjectByName('clyde');
+    pacman0.scale.set(1.4, 1.4, 1.4);
+    pacman0.position.y = 1.7;
+    pacman1.scale.set(1.4, 1.4, 1.4);
+    pacman2.scale.set(3.57, 3.57, 3.57);
+    pacman1.position.y = 1.7;
+    pacman2.position.y = 1.7;
+    inky.scale.set(3.57, 3.57, 3.57);
+    blinky.scale.set(3.57, 3.57, 3.57);
+    pinky.scale.set(3.57, 3.57, 3.57);
+    clyde.scale.set(3.57, 3.57, 3.57);
+    initDots();
+    //placeDots();
+    var coords = getPositionFromArray (11, 12);
+    console.log(coords);
+    pacman0.position.x = coords.x;
+    pacman0.position.z = coords.y;
+    var coords2 = getPositionFromArray (1, 15);
+    console.log(coords2);
+    pacman1.position.x = coords2.x;
+    pacman1.position.z = coords2.y;
+    blinky.position.z = 50;
+    blinky.position.x = 45;
 
-    		if ( child instanceof THREE.Mesh ) {
+    board.scale.set(20, 20, 20);
+    board.position.x = 23;
+    board.position.z = 24.753;
+    camera.position.set (22.5, 250, 125);
+    camera.lookAt( board.position );
+    var controls = new THREE.OrbitControls (camera, renderer.domElement);
+    controls.target.set(board.position.x, board.position.y, board.position.z);
+    controls.update();
+
+}, 1000);
+
+    //myObjs['board'].scale.set(50, 50, 50);
+    //var pacman = loadObject('../models/pacman0.obj', '../textures/pacman.png');
+}
+
+function loadObject(modelName, modelPath, texturePath) {
+    loader.load( modelPath, function ( object ) {
+        var texture = textureLoader.load( texturePath );
+        object.traverse( function ( child ) {
+
+            if ( child instanceof THREE.Mesh ) {
                 child.material.side = THREE.DoubleSide;
-    			//child.material.map = texture;
-    		}
-    	} );
-        object.scale.set(50,50,50);
-    	object.position.y = 0;
+                child.material.map = texture;
+            }
+        } );
+        //object.scale.set(50,50,50);
+        object.position.x = 0;
+        object.position.y = 0;
         object.position.z = 0;
+        object.name = modelName;
         //object.rotation.x = 1.6;
         //object.rotation.y = 3.14;
-    	scene.add( object );
+        scene.add( object );
+        //object.name = modelName;
+        //myObjs[modelName] = object;
     });
-
 }
 
 window.onresize = function () {
@@ -120,7 +183,6 @@ document.addEventListener('keypress', (event) => {
         default:
 
     }
-    console.log(directionKey);
 });
 
 function render() {
@@ -134,23 +196,51 @@ function render() {
             //console.log("Ghost:", ghost.position);
         });
     }
-    gLight1.position.y = game.ghosts[0].position.x * 2;
-    gLight1.position.x = game.ghosts[0].position.y * 2;
-    gLight2.position.y = game.ghosts[1].position.x * 2;
-    gLight2.position.x = game.ghosts[1].position.y * 2;
-    pacLight.position.y = game.pacman.position.x * 2;
-    pacLight.position.x = game.pacman.position.y * 2;
+
+    var pacCoords = getPositionFromArray (game.pacman.position.x, game.pacman.position.y);
+    pacman0.position.x = pacCoords.x;
+    pacman0.position.z = pacCoords.y;
     stats.update();
     renderer.render( scene, camera );
 
 }
 
-init();
+function getPositionFromArray(arrayX, arrayY) {
+    var x = arrayY * 1.64 + 0.82; // x
+    var y = arrayX * 1.64 + 0.82; // z
+    return {x: x, y: y};
+}
+
+function initDots(){
+    var gameBoard = game.map.board;
+    for(var i = 0; i < gameBoard.length; i+=1){
+        var row = [];
+        for(var j = 0; j < gameBoard[0].length; j +=1){
+            if(gameBoard[i][j].content == TileContents.DOT){
+                var sphere = new THREE.SphereGeometry( 0.4, 16, 8 );
+                var dot = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial({color: 0xFFFFFF}));
+                var coord = getPositionFromArray(i, j);
+                dot.position.x = coord.x;
+                dot.position.z = coord.y;
+                dot.position.y = 1.7;
+                scene.add(dot);
+                row.push(dot);
+            }else{
+                row.push(null);
+            }
+        }
+        dots.push(row);
+    }
+}
+
+
 DateLast = 0;
 game = new Game(boardPrototype);
-pacLight = createPointLight (2, 0xffff00);
-gLight1 = createPointLight(2, 0xff0000);
-gLight2 = createPointLight(2, 0x00ff00);
+init();
+console.log(game.pacman.position);
+//pacLight = createPointLight (2, 0xffff00);
+//gLight1 = createPointLight(2, 0xff0000);
+//gLight2 = createPointLight(2, 0x00ff00);
 animate();
 //console.log("");
 
