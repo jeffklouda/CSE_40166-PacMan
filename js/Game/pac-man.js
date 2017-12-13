@@ -464,7 +464,7 @@ class Game {
     ];
     this.moveDirection = Direction.RIGHT;
     this.score = 0;
-    this.pause = false; 
+    this.pause = false;
     
     this.deployments = {
       activeGhosts: [this.ghosts[0], this.ghosts[1]],

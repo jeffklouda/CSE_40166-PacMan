@@ -1,6 +1,7 @@
 var scene, camera, controls, loader, textureLoader, board;
 var board, pacman0, pacman1, pacman2, inky, blinky, pinky, clyde, inkyB, blinkyB, pinkyB, clydeB;
-var munch_audio;
+var audioListener, audioLoader;
+var begin, chomp, death, ghosteat;
 var myGame;
 var direction = Direction.RIGHT;
 var pellets = [];
@@ -73,12 +74,20 @@ function init() {
     loadObject('pinky_blue', 'models/ghost.obj', 'textures/blue.png');
     loadObject('clyde_blue', 'models/ghost.obj', 'textures/blue.png');
 
+    // Load audio files
+    audioListener = new THREE.AudioListener();
+    camera.add(audioListener);
+    loadSound('chomp', '../audio/pacman_chomp.wav');
+    loadSound('begin', '../audio/pacman_beginning.wav');
+    loadSound('death', '../audio/pacman_death.wav');
+    loadSound('ghosteat', '../audio/pacman_eatghost.wav');
+
     // Setting score
     canvas = document.getElementById('canvas');
     canvas.style.display = "none";
     ctx = canvas.getContext('2d');
 
-    scoreTex = new THREE.Texture(canvas);
+    scoreTex = new THREE.CanvasTexture(canvas);
     scoreMat = new THREE.MeshBasicMaterial({map: scoreTex});
     scoreGeo = new THREE.PlaneGeometry(40, 10, 10);
     score = new THREE.Mesh(scoreGeo, scoreMat);
@@ -90,9 +99,29 @@ function init() {
 
     // Setting up objects
     setTimeout ( function() {
+      setupSounds();
       setupObjects();
     }, 2000);
 
+}
+
+function loadSound(name, soundFile){
+    var sound = new THREE.Audio(audioListener);
+
+    sound.load(soundFile);
+    if (name == 'chomp'){
+        sound.loop = true;
+    }
+    sound.name = name;
+
+    scene.add(sound);
+}
+
+function setupSounds(){
+    begin = scene.getObjectByName('begin');
+    chomp = scene.getObjectByName('chomp');
+    death = scene.getObjectByName('death');
+    ghosteat = scene.getObjectByName('ghosteat');
 }
 
 function setupObjects(){
@@ -192,6 +221,8 @@ function createPointLight (size, add_color) {
 }
 
 function animate() {
+    if (!(chomp.isPlaying || death.isPlaying || begin.isPlaying || ghosteat.isPlaying)) chomp.play();
+    
     updateScore();
     scoreTex.needsUpdate = true;
 
@@ -230,12 +261,23 @@ function render() {
     counter++;
     if (counter%4 == 0){
       updateDotsAndPellets();
-      if (!(myGame.pause || myGame.score == 2660)) myGame.update(direction);
+
+      if (myGame.pacman.respawn){
+          chomp.stop();
+          death.play();
+          myGame.update(direction);
+      }
+      else if (!(myGame.pause || myGame.score == 2660)){
+          myGame.update(direction);
+      }
     }
 
     if (!(myGame.pause || myGame.score == 2660)){
         drawGhosts();
         drawPacMan();
+    }
+    else{
+        chomp.stop();
     }
 
     renderer.render( scene, camera );
@@ -259,7 +301,7 @@ function updateScore(){
         text = 'Y O U  W I N!';
     }
     else{
-        text = 'Lives: ' + myGame.pacman.lives + '      Score: ' + myGame.score;
+        text = 'Lives: ' + myGame.pacman.lives + '  Score: ' + myGame.score;
     }
 
     ctx.fillText(text, canvas.width / 2, canvas.height / 2);
@@ -321,6 +363,8 @@ function renderGhost(normalModel, blueModel, ghost){
       normalModel.visible = true;
     }
   }else{
+    chomp.stop();
+    ghosteat.play();
     blueModel.visible = false;
     normalModel.visible = false;
   }
@@ -333,7 +377,7 @@ function drawPacMan(){
   pacman2.visible = false;
   var rem = counter % 4;
   var x = myGame.pacman.position.x;
-  var y = myGame.pacman.position.y;
+  var y = myGame.pacman.position.y; 
 
   if (myGame.pacman.direction != Direction.STAY) {
   switch(myGame.pacman.direction){
@@ -365,12 +409,14 @@ function drawPacMan(){
       break;
   }
   var coords = getPositionFromArray(x, y);
-
+ 
   if (!myGame.pacman.alive || myGame.score == 2660 || myGame.pause){
       pacman2.visible = true;
       pacman2.position.x = coords.x;
       pacman2.position.z = coords.y;
       pacman2.rotation.y = angle;
+
+      chomp.stop();
   }
   else{
       switch (counter % 8) {
@@ -449,14 +495,27 @@ function updateDotsAndPellets(){
   for(var i = 0; i < dots.length; i+=1){
     for(var j = 0; j < dots[0].length; j+=1){
       if((gameBoard[i][j].content == TileContents.EMPTY) && (dots[i][j] != null)){
-        scene.remove(dots[i][j]);
+          scene.remove(dots[i][j]);
       }
     }
   }
 }
 
+function startup(){
+    begin.play();
+    render();
+    setTimeout(animate, 4000);    
+}
+
+function death(){
+    chomp.stop();
+    death.play();
+    setTimeout(animate, 4000);
+}
+
 window.onload=function(){
   myGame = new Game(boardPrototype);
   init();
-  setTimeout(animate,3000);
+
+  setTimeout(startup,3000);
 }
