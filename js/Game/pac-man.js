@@ -524,12 +524,7 @@ class Game {
 
   killAndDeploy(ghost){
     var i = this.deployments.activeGhosts.indexOf(ghost);
-    console.log('K&D:ACTIVE GHOSTS');
-    console.log(this.deployments.activeGhosts);
-    console.log('INACTIVE GHOSTS');
-    console.log(this.deployments.inactiveGhosts);
     var j = Math.floor(Math.random() * (this.deployments.inactiveGhosts.length));
-    console.log(j);
     var newGhost = this.deployments.inactiveGhosts[j];
     ghost.position.x = newGhost.position.x;
     ghost.position.y = newGhost.position.y;
@@ -543,9 +538,6 @@ class Game {
 
     this.deployments.activeGhosts[i] = newGhost;
     this.deployments.inactiveGhosts[j] = ghost;
-    console.log('END OF K&D');
-    console.log(this.deployments.activeGhosts);
-    console.log(this.deployments.inactiveGhosts);
   }
 
   updateTile(position){
