@@ -3,28 +3,17 @@ class Ghost {
     this.alive = true;
     this.name = name;
     this.position = position;
-    this.entering = false;
     this.direction = direction;
     this.state = (direction == Direction.STAY ? GhostState.WAITING : GhostState.NORMAL);
     this.probability = probability;
     this.counter = 0;
   }
 
-
   move(game){
-    if(this.state == GhostState.WAITING || this.direction == Direction.STAY){
-        return;
-    }
-
-    this.normalMove(game);
-
-    if (game.map.isLeftWarp(this.position.x, this.position.y)) {
-        this.position.x = warp_r.x;
-        this.position.y = warp_r.y;
-    }
-    else if (game.map.isRightWarp(this.position.x, this.position.y)) {
-        this.position.x = warp_l.x;
-        this.position.y = warp_l.y;
+    if(this.state == GhostState.WAITING){
+      return;
+    }else if(this.state == GhostState.ENTERING){
+      this.handleEntering(game);
     }else if(game.map.hasIntersection(this.position)){
       if ((Math.random() <= this.probability) || (this.state == GhostState.BLUE)){
         this.handleIntersection(game);
@@ -33,6 +22,8 @@ class Ghost {
       }
     }else if(game.map.hasTwoWayIntersection(this.position)){
       this.handleTwoWayIntersection(game);
+    }else{
+      this.normalMove(game);
     }
   }
 
@@ -66,6 +57,7 @@ class Ghost {
         }
     }
 
+    this.normalMove(game);
   }
 
   handleIntersection(game){
@@ -95,6 +87,7 @@ class Ghost {
     if(this.state == GhostState.NORMAL) this.direction = this.getMinDirection(distances);
     else if(this.state == GhostState.BLUE) this.direction = this.getMaxDirection(distances);
 
+    this.normalMove(game);
   }
 
   randomMovement(game){
@@ -108,6 +101,20 @@ class Ghost {
     var index = Math.floor(Math.random() * (max - min +1)) + min;
     this.direction = validOrientations[index];
 
+    this.normalMove(game);
+  }
+
+  handleEntering(game){
+    this.position.x -= 1;
+    if(!game.map.hasBox(this.position)){
+      if(game.ghostInPosition(this.position).bool){
+        this.position.x += 1;
+      }else{
+        this.direction = Math.random() < 0.5 ? Direction.RIGHT : Direction.LEFT;
+        this.state = GhostState.NORMAL;
+        game.updateBox(this);
+      }
+    }
   }
 
   switchDirection(){
@@ -115,19 +122,23 @@ class Ghost {
   }
 
   startBlueMode(){
-    this.counter = 0;
     this.state = GhostState.BLUE;
   }
 
   updateCounter(){
     if(this.state == GhostState.BLUE) this.counter += 1;
-    if(this.counter >= 100){
-      this.counter = 0;
+    if(this.counter == 50){
+      this.counter == 0;
       this.state = GhostState.NORMAL;
     }
   }
 
   checkTile(game){
+    if(game.ghostInPosition(this.position, this).bool){
+      this.switchDirection();
+      this.move(game);
+      this.move(game);
+    }
 
     if(game.pacManInPosition(this.position)){
       if(this.state != GhostState.BLUE) game.pacman.loseLife();
@@ -136,6 +147,7 @@ class Ghost {
   }
 
   loseLife(game){
+    this.alive = false;
     game.killAndDeploy(this);
   }
 
@@ -167,24 +179,6 @@ class Ghost {
     }
 
     return direction;
-  }
-
-  handleCollition(game){
-    var map = game.map;
-    switch(this.direction){
-      case Direction.UP:
-        this.position.x += 1;
-        break;
-      case Direction.DOWN:
-        this.position.x -= 1;
-        break;
-      case Direction.RIGHT:
-        this.position.y -= 1;
-        break;
-      case Direction.LEFT:
-        this.position.y += 1;
-        break;
-    }
   }
 
 }
