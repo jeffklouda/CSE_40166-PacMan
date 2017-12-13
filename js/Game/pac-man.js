@@ -1,3 +1,6 @@
+var warp_l = {x: 14, y: 1};
+var warp_r = {x: 14, y: 26};
+
 var boardPrototype = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [1,2,2,2,2,2,4,2,2,2,2,2,2,1,1,2,2,2,2,2,2,4,2,2,2,2,2,1],
@@ -13,7 +16,7 @@ var boardPrototype = [
   [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
   [0,0,0,0,0,1,2,1,1,0,5,5,5,5,5,5,5,5,0,1,1,2,1,0,0,0,0,0],
   [1,1,1,1,1,1,2,1,1,0,5,5,5,5,5,5,5,5,0,1,1,2,1,1,1,1,1,1],
-  [1,0,0,0,0,1,4,0,0,4,5,5,5,5,5,5,5,5,4,0,0,4,1,0,0,0,0,1],
+  [1,6,0,0,0,0,4,0,0,4,5,5,5,5,5,5,5,5,4,0,0,4,0,0,0,0,7,1],
   [1,1,1,1,1,1,2,1,1,0,5,5,5,5,5,5,5,5,0,1,1,2,1,1,1,1,1,1],
   [0,0,0,0,0,1,2,1,1,0,5,5,5,5,5,5,5,5,0,1,1,2,1,0,0,0,0,0],
   [0,0,0,0,0,1,2,1,1,4,0,0,0,0,0,0,0,0,4,1,1,2,1,0,0,0,0,0],
@@ -35,8 +38,7 @@ var boardPrototype = [
 var GhostState = {
   NORMAL: 1,
   BLUE: 2,
-  ENTERING: 3,
-  WAITING: 4
+  WAITING: 3
 };
 
 var GhostName = {
@@ -55,7 +57,7 @@ var Direction = {
   getComplements: function(direction){
     if(direction == this.UP || direction == this.DOWN){
       return [this.LEFT, this.RIGHT];
-    }else if(direction == this.RIGHT || direction == this.LEFT){
+    }else if (direction == this.RIGHT || direction == this.LEFT){
       return [this.UP, this.DOWN];
     }
   }
@@ -65,7 +67,9 @@ var TileType = {
   NORMAL: 1,
   WALL: 2,
   INTERSECTION: 3,
-  BOX: 4
+  BOX: 4,
+  WARP_LEFT: 6,
+  WARP_RIGHT: 7
 }
 
 var TileContents = {
@@ -93,6 +97,7 @@ class Ghost {
     this.alive = true;
     this.name = name;
     this.position = position;
+    this.entering = false;
     this.direction = direction;
     this.state = (direction == Direction.STAY ? GhostState.WAITING : GhostState.NORMAL);
     this.probability = probability;
@@ -100,10 +105,17 @@ class Ghost {
   }
 
   move(game){
-    if(this.state == GhostState.WAITING){
+   
+    if (game.map.isLeftWarp(this.position.x, this.position.y)) {
+        this.position.x = warp_r.x;
+        this.position.y = warp_r.y;
+    }
+    else if (game.map.isRightWarp(this.position.x, this.position.y)) {
+        this.position.x = warp_l.x;
+        this.position.y = warp_l.y;
+    }
+    if(this.state == GhostState.WAITING || this.direction == Direction.STAY){
       return;
-    }else if(this.state == GhostState.ENTERING){
-      this.handleEntering(game);
     }else if(game.map.hasIntersection(this.position)){
       if ((Math.random() <= this.probability) || (this.state == GhostState.BLUE)){
         this.handleIntersection(game);
@@ -194,24 +206,12 @@ class Ghost {
     this.normalMove(game);
   }
 
-  handleEntering(game){
-    this.position.x -= 1;
-    if(!game.map.hasBox(this.position)){
-      if(game.ghostInPosition(this.position).bool){
-        this.position.x += 1;
-      }else{
-        this.direction = Math.random() < 0.5 ? Direction.RIGHT : Direction.LEFT;
-        this.state = GhostState.NORMAL;
-        game.updateBox(this);
-      }
-    }
-  }
-
   switchDirection(){
     this.direction *= (-1);
   }
 
   startBlueMode(){
+    this.counter = 0;
     this.state = GhostState.BLUE;
   }
 
@@ -232,7 +232,6 @@ class Ghost {
   }
 
   loseLife(game){
-    this.alive = false;
     game.killAndDeploy(this);
   }
 
@@ -317,7 +316,16 @@ class GameMap {
       case 3: return new Tile(TileType.NORMAL, TileContents.PELLET);
       case 4: return new Tile(TileType.INTERSECTION, TileContents.DOT);
       case 5: return new Tile(TileType.BOX, TileContents.EMPTY);
+      case 6: return new Tile(TileType.WARP_LEFT, TileContents.EMPTY);
+      case 7: return new Tile(TileType.WARP_RIGHT, TileContents.EMPTY);
     }
+  }
+
+  isLeftWarp(x, y) {
+    return (this.board[x][y].type == TileType.WARP_LEFT);
+  }
+  isRightWarp(x, y) {
+    return (this.board[x][y].type == TileType.WARP_RIGHT);
   }
 
   hasWall(x, y){
@@ -364,10 +372,20 @@ class PacMan {
     this.alive = true;
     this.respawn = false;
     this.respawnCounter = 0;
+    this.moving=false;
   }
 
   move(game, direction){
     var map = game.map;
+    if (map.isLeftWarp(this.position.x, this.position.y)) {
+        this.position.x = warp_r.x;
+        this.position.y = warp_r.y;
+    }
+    else if (map.isRightWarp(this.position.x, this.position.y)) {
+        this.position.x = warp_l.x;
+        this.position.y = warp_l.y;
+    }
+    this.moving = true;
     switch(direction){
       case Direction.UP:
         if(!map.hasWall(this.position.x - 1, this.position.y)){
@@ -376,6 +394,7 @@ class PacMan {
         }else if(direction != this.direction){
           this.move(game, this.direction);
         }
+        else this.moving = false;
         break;
       case Direction.DOWN:
         if(!map.hasWall(this.position.x + 1, this.position.y)){
@@ -384,6 +403,7 @@ class PacMan {
         }else if(direction != this.direction){
           this.move(game, this.direction);
         }
+        else this.moving = false;
         break;
       case Direction.RIGHT:
         if(!map.hasWall(this.position.x, this.position.y + 1)){
@@ -392,6 +412,7 @@ class PacMan {
         }else if(direction != this.direction){
           this.move(game, this.direction);
         }
+        else this.moving = false;
         break;
       case Direction.LEFT:
         if(!map.hasWall(this.position.x, this.position.y - 1)){
@@ -400,6 +421,7 @@ class PacMan {
         }else if(direction != this.direction){
           this.move(game, this.direction);
         }
+        else this.moving = false;
         break;
     }
     this.checkTile(game);
@@ -431,6 +453,7 @@ class Game {
   constructor(prototype){
     this.map = new GameMap(prototype);
     this.pacman = new PacMan(new Position(23, 12));
+    this.pacman.moving = false;
     this.ghosts = [
       new Ghost(new Position(11, 13), 1, GhostName.BLINKY, Direction.LEFT),
       new Ghost(new Position(11, 15), 0.2, GhostName.PINKY, Direction.RIGHT),
@@ -443,9 +466,9 @@ class Game {
     this.deployments = {
       activeGhosts: [this.ghosts[0], this.ghosts[1]],
       inactiveGhosts: [this.ghosts[2], this.ghosts[3]],
-      returnTargets: new Map()
     }
   }
+    
 
   update(direction){
     if(this.pacman.alive && !this.pacman.respawn){
@@ -469,6 +492,7 @@ class Game {
 
   respawn(){
     this.pacman.position = new Position(23, 12);
+    this.pacman.moving = false;
     this.pacman.respawn = false;
     this.ghosts = [
       new Ghost(new Position(11, 13), 1, GhostName.BLINKY, Direction.LEFT),
@@ -476,8 +500,10 @@ class Game {
       new Ghost(new Position(14, 13), 0.4, GhostName.INKY, Direction.STAY),
       new Ghost(new Position(14, 15), 0.7, GhostName.CLYDE, Direction.STAY)
     ];
-    this.deployments.activeGhosts = [this.ghosts[0], this.ghosts[1]];
-    this.deployments.inactiveGhosts = [this.ghosts[2], this.ghosts[3]];
+    this.deployments = {
+      activeGhosts: [this.ghosts[0], this.ghosts[1]],
+      inactiveGhosts: [this.ghosts[2], this.ghosts[3]],
+    }
     this.moveDirection = Direction.RIGHT;
   }
 
@@ -497,30 +523,29 @@ class Game {
   }
 
   killAndDeploy(ghost){
-    //console.log(this.deployments);
     var i = this.deployments.activeGhosts.indexOf(ghost);
-    if (i > -1){
-      this.deployments.activeGhosts.splice(i, 1);
-    }
-
+    console.log('K&D:ACTIVE GHOSTS');
+    console.log(this.deployments.activeGhosts);
+    console.log('INACTIVE GHOSTS');
+    console.log(this.deployments.inactiveGhosts);
     var j = Math.floor(Math.random() * (this.deployments.inactiveGhosts.length));
+    console.log(j);
     var newGhost = this.deployments.inactiveGhosts[j];
-    this.deployments.returnTargets.set(ghost, {target: newGhost.position, previousGhost: newGhost});
+    ghost.position.x = newGhost.position.x;
+    ghost.position.y = newGhost.position.y;
+    newGhost.state = GhostState.NORMAL;
+    newGhost.entering = false;
+    newGhost.direction = Direction.RIGHT;
+    newGhost.position.x = 11;
+    newGhost.position.y = 13;
+    ghost.state = GhostState.WAITING;
+    ghost.direction = Direction.STAY;
 
-    newGhost.state = GhostState.ENTERING;
-    newGhost.direction = Direction.UP;
-    this.deployments.activeGhosts.push(newGhost);
-  }
-
-  updateBox(ghost){
-    for(let [k,v] of this.deployments.returnTargets){
-      if(v.previousGhost == ghost){
-        k.position = v.target;
-        k.alive = true;
-        k.state = GhostState.WAITING;
-        k.direction = Direction.STAY;
-      }
-    }
+    this.deployments.activeGhosts[i] = newGhost;
+    this.deployments.inactiveGhosts[j] = ghost;
+    console.log('END OF K&D');
+    console.log(this.deployments.activeGhosts);
+    console.log(this.deployments.inactiveGhosts);
   }
 
   updateTile(position){
@@ -531,7 +556,7 @@ class Game {
     }else if(this.map.board[x][y].content == TileContents.PELLET){
       this.map.board[x][y].content = TileContents.EMPTY;
       this.score += 50;
-      this.ghosts.forEach(function(ghost){
+      this.deployments.activeGhosts.forEach(function(ghost){
         ghost.startBlueMode();
       });
     }
