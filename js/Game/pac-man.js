@@ -105,7 +105,10 @@ class Ghost {
   }
 
   move(game){
-   
+    if(this.state == GhostState.WAITING || this.direction == Direction.STAY){
+        return;
+    }
+    this.normalMove(game);
     if (game.map.isLeftWarp(this.position.x, this.position.y)) {
         this.position.x = warp_r.x;
         this.position.y = warp_r.y;
@@ -113,9 +116,6 @@ class Ghost {
     else if (game.map.isRightWarp(this.position.x, this.position.y)) {
         this.position.x = warp_l.x;
         this.position.y = warp_l.y;
-    }
-    if(this.state == GhostState.WAITING || this.direction == Direction.STAY){
-      return;
     }else if(game.map.hasIntersection(this.position)){
       if ((Math.random() <= this.probability) || (this.state == GhostState.BLUE)){
         this.handleIntersection(game);
@@ -125,7 +125,7 @@ class Ghost {
     }else if(game.map.hasTwoWayIntersection(this.position)){
       this.handleTwoWayIntersection(game);
     }else{
-      this.normalMove(game);
+      //this.normalMove(game);
     }
   }
 
@@ -159,7 +159,7 @@ class Ghost {
         }
     }
 
-    this.normalMove(game);
+    //this.normalMove(game);
   }
 
   handleIntersection(game){
@@ -189,7 +189,7 @@ class Ghost {
     if(this.state == GhostState.NORMAL) this.direction = this.getMinDirection(distances);
     else if(this.state == GhostState.BLUE) this.direction = this.getMaxDirection(distances);
 
-    this.normalMove(game);
+    //this.normalMove(game);
   }
 
   randomMovement(game){
@@ -203,7 +203,7 @@ class Ghost {
     var index = Math.floor(Math.random() * (max - min +1)) + min;
     this.direction = validOrientations[index];
 
-    this.normalMove(game);
+    //this.normalMove(game);
   }
 
   switchDirection(){
@@ -368,15 +368,46 @@ class PacMan {
     this.position = position;
     this.startPosition = position;
     this.direction = Direction.RIGHT;
+    this.lastDirection = Direction.RIGHT;
     this.lives = 5;
     this.alive = true;
     this.respawn = false;
     this.respawnCounter = 0;
     this.moving=false;
   }
+  checkWall(game, dir) {
+      switch(dir){
+        case Direction.UP:
+            return game.map.hasWall(this.position.x - 1, this.position.y);
+
+        case Direction.DOWN:
+            return game.map.hasWall(this.position.x + 1, this.position.y);
+
+        case Direction.RIGHT:
+            return game.map.hasWall(this.position.x, this.position.y + 1);
+
+        case Direction.LEFT:
+            return game.map.hasWall(this.position.x, this.position.y - 1);
+    }
+  }
 
   move(game, direction){
     var map = game.map;
+    this.moving = true;
+    switch(this.direction) {
+        case Direction.UP:
+            this.position.x -= 1;
+            break;
+        case Direction.DOWN:
+              this.position.x += 1;
+              break;
+        case Direction.RIGHT:
+              this.position.y += 1;
+              break;
+        case Direction.LEFT:
+              this.position.y -= 1;
+              break;
+    }
     if (map.isLeftWarp(this.position.x, this.position.y)) {
         this.position.x = warp_r.x;
         this.position.y = warp_r.y;
@@ -385,8 +416,47 @@ class PacMan {
         this.position.x = warp_l.x;
         this.position.y = warp_l.y;
     }
-    this.moving = true;
-    switch(direction){
+
+    if (this.direction != Direction.STAY) {
+        this.lastDirection = this.direction;
+    }
+    if (this.checkWall(game, direction)) {
+        if (this.checkWall(game, this.direction)) {
+            this.direction = Direction.STAY;
+        }
+    } else {
+        this.direction = direction;
+    }
+      /*case Direction.UP:
+        if(map.hasWall(this.position.x - 1, this.position.y)){
+          this.direction = Direction.STAY;
+          this.moving = false;
+        }else
+          this.direction = direction;
+          break;
+      case Direction.DOWN:
+        if(map.hasWall(this.position.x + 1, this.position.y)){
+            this.direction = Direction.STAY;
+            this.moving = false;
+          }else
+            this.direction = direction;
+            break;
+      case Direction.RIGHT:
+        if(map.hasWall(this.position.x, this.position.y + 1)){
+            this.direction = Direction.STAY;
+            this.moving = false;
+          }else
+            this.direction = direction;
+            break;
+      case Direction.LEFT:
+        if(map.hasWall(this.position.x, this.position.y - 1)){
+            this.direction = Direction.STAY;
+            this.moving = false;
+          }else
+            this.direction = direction;
+            break;
+    }*/
+    /*switch(direction){
       case Direction.UP:
         if(!map.hasWall(this.position.x - 1, this.position.y)){
           this.position.x -= 1;
@@ -423,7 +493,7 @@ class PacMan {
         }
         else this.moving = false;
         break;
-    }
+    }*/
     this.checkTile(game);
   }
 
@@ -468,7 +538,7 @@ class Game {
       inactiveGhosts: [this.ghosts[2], this.ghosts[3]],
     }
   }
-    
+
 
   update(direction){
     if(this.pacman.alive && !this.pacman.respawn){
@@ -505,6 +575,12 @@ class Game {
       inactiveGhosts: [this.ghosts[2], this.ghosts[3]],
     }
     this.moveDirection = Direction.RIGHT;
+    this.pacman.direction = Direction.RIGHT;
+    if (this.pacman.lives < 1) {
+        this.deployments.activeGhosts[0].direction = Direction.STAY;
+        this.deployments.activeGhosts[1].direction = Direction.STAY;
+        this.pacman.direction = Direction.STAY;
+    }
   }
 
   pacManInPosition(position){

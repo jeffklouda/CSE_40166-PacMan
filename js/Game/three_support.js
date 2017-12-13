@@ -1,6 +1,7 @@
 var scene, camera, controls, loader, textureLoader, board;
 var board, pacman0, pacman1, pacman2, inky, blinky, pinky, clyde, inkyB, blinkyB, pinkyB, clydeB;
-var myGame, direction;
+var myGame;
+var direction = Direction.RIGHT;
 var pellets = [];
 var dots = [];
 var renderer;
@@ -44,7 +45,7 @@ function init() {
     container.appendChild( renderer.domElement );
     renderer.gammaInput = true;
     renderer.gammaOutput = true;
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = false;
     renderer.shadowMap.renderReverseSided = false;
 
     // Setting orbit controls
@@ -133,6 +134,7 @@ function loadObject(modelName, modelPath, texturePath) {
 
             if ( child instanceof THREE.Mesh ) {
                 child.material = new THREE.MeshLambertMaterial;
+                //child.material = new THREE.MeshToonMaterial;
                 child.material.side = THREE.DoubleSide;
                 child.material.map = texture;
             }
@@ -232,7 +234,7 @@ function renderGhost(normalModel, blueModel, ghost){
   var x = ghost.position.x;
   var y = ghost.position.y;
 
-  /*switch (ghost.direction) {
+  switch (ghost.direction) {
     case Direction.UP:
         x -= rem * 0.25;
         break;
@@ -245,14 +247,14 @@ function renderGhost(normalModel, blueModel, ghost){
     case Direction.RIGHT:
         y += rem * 0.25;
         break;
-  }*/
+  }
   var ghostCoords = getPositionFromArray(x,y);
 
   normalModel.position.x = ghostCoords.x;
   normalModel.position.z = ghostCoords.y;
   blueModel.position.x = ghostCoords.x;
   blueModel.position.z = ghostCoords.y;
-  
+
   if(ghost.alive){
     if(ghost.state == GhostState.BLUE){
       blueModel.visible = true;
@@ -277,8 +279,8 @@ function drawPacMan(){
   var x = myGame.pacman.position.x;
   var y = myGame.pacman.position.y;
 
-  if (myGame.pacman.moving) {
- /* switch(myGame.pacman.direction){
+  if (myGame.pacman.direction != Direction.STAY) {
+  switch(myGame.pacman.direction){
     case Direction.UP:
       x -= rem * 0.25;
       break;
@@ -291,9 +293,9 @@ function drawPacMan(){
     case Direction.RIGHT:
       y += rem * 0.25;
       break;
-  }*/
   }
-  switch(myGame.pacman.direction){
+  }
+  switch(myGame.pacman.lastDirection){
     case Direction.UP:
       angle = (Math.PI/180) * 90;
       break;
@@ -307,7 +309,7 @@ function drawPacMan(){
       break;
   }
   var coords = getPositionFromArray(x, y);
-  
+
   switch (counter % 8) {
       case 0:
       case 1:
