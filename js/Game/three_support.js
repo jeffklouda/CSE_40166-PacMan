@@ -77,10 +77,10 @@ function init() {
     // Load audio files
     audioListener = new THREE.AudioListener();
     camera.add(audioListener);
-    loadSound('chomp', '../audio/pacman_chomp.wav');
-    loadSound('begin', '../audio/pacman_beginning.wav');
-    loadSound('death', '../audio/pacman_death.wav');
-    loadSound('ghosteat', '../audio/pacman_eatghost.wav');
+    loadSound('chomp', 'audio/pacman_chomp.wav');
+    loadSound('begin', 'audio/pacman_beginning.wav');
+    loadSound('death', 'audio/pacman_death.wav');
+    loadSound('ghosteat', 'audio/pacman_eatghost.wav');
 
     // Setting score
     canvas = document.getElementById('canvas');
