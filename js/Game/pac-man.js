@@ -1,4 +1,3 @@
-var gc = 0;
 var boardPrototype = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [1,2,2,2,2,2,4,2,2,2,2,2,2,1,1,2,2,2,2,2,2,4,2,2,2,2,2,1],
@@ -101,8 +100,6 @@ class Ghost {
   }
 
   move(game){
-    gc += 1;
-    console.log(gc);
     if(this.state == GhostState.WAITING){
       return;
     }else if(this.state == GhostState.ENTERING){
@@ -220,8 +217,8 @@ class Ghost {
 
   updateCounter(){
     if(this.state == GhostState.BLUE) this.counter += 1;
-    if(this.counter == 50){
-      this.counter == 0;
+    if(this.counter >= 100){
+      this.counter = 0;
       this.state = GhostState.NORMAL;
     }
   }
@@ -456,7 +453,10 @@ class Game {
       this.pacman.move(this, direction);
 
       for(var i = 0; i < this.ghosts.length; i += 1) {
-        if(this.ghosts[i].alive) this.ghosts[i].move(this);
+        if(this.ghosts[i].alive) {
+            this.ghosts[i].move(this);
+        }
+        this.ghosts[i].updateCounter();
       }
     }else if(this.pacman.respawn){
       this.respawn();
@@ -497,6 +497,7 @@ class Game {
   }
 
   killAndDeploy(ghost){
+    //console.log(this.deployments);
     var i = this.deployments.activeGhosts.indexOf(ghost);
     if (i > -1){
       this.deployments.activeGhosts.splice(i, 1);
