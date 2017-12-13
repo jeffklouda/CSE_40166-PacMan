@@ -1,4 +1,4 @@
-
+var gc = 0;
 var boardPrototype = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [1,2,2,2,2,2,4,2,2,2,2,2,2,1,1,2,2,2,2,2,2,4,2,2,2,2,2,1],
@@ -14,10 +14,10 @@ var boardPrototype = [
   [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
   [0,0,0,0,0,1,2,1,1,0,5,5,5,5,5,5,5,5,0,1,1,2,1,0,0,0,0,0],
   [1,1,1,1,1,1,2,1,1,0,5,5,5,5,5,5,5,5,0,1,1,2,1,1,1,1,1,1],
-  [1,0,0,0,0,1,4,0,0,0,5,5,5,5,5,5,5,5,0,0,0,4,1,0,0,0,0,1],
+  [1,0,0,0,0,1,4,0,0,4,5,5,5,5,5,5,5,5,4,0,0,4,1,0,0,0,0,1],
   [1,1,1,1,1,1,2,1,1,0,5,5,5,5,5,5,5,5,0,1,1,2,1,1,1,1,1,1],
   [0,0,0,0,0,1,2,1,1,0,5,5,5,5,5,5,5,5,0,1,1,2,1,0,0,0,0,0],
-  [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
+  [0,0,0,0,0,1,2,1,1,4,0,0,0,0,0,0,0,0,4,1,1,2,1,0,0,0,0,0],
   [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
   [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
   [1,2,2,2,2,2,4,2,2,4,2,2,2,1,1,2,2,2,4,2,2,4,2,2,2,2,2,1],
@@ -101,6 +101,8 @@ class Ghost {
   }
 
   move(game){
+    gc += 1;
+    console.log(gc);
     if(this.state == GhostState.WAITING){
       return;
     }else if(this.state == GhostState.ENTERING){
@@ -225,9 +227,6 @@ class Ghost {
   }
 
   checkTile(game){
-    if(game.ghostInPosition(this.position, this).bool){
-      this.handleCollition(game);
-    }
 
     if(game.pacManInPosition(this.position)){
       if(this.state != GhostState.BLUE) game.pacman.loseLife();
@@ -377,7 +376,7 @@ class PacMan {
         if(!map.hasWall(this.position.x - 1, this.position.y)){
           this.position.x -= 1;
           this.direction = direction;
-        }else{
+        }else if(direction != this.direction){
           this.move(game, this.direction);
         }
         break;
@@ -385,7 +384,7 @@ class PacMan {
         if(!map.hasWall(this.position.x + 1, this.position.y)){
           this.position.x += 1;
           this.direction = direction;
-        }else{
+        }else if(direction != this.direction){
           this.move(game, this.direction);
         }
         break;
@@ -393,7 +392,7 @@ class PacMan {
         if(!map.hasWall(this.position.x, this.position.y + 1)){
           this.position.y += 1;
           this.direction = direction;
-        }else{
+        }else if(direction != this.direction){
           this.move(game, this.direction);
         }
         break;
@@ -401,7 +400,7 @@ class PacMan {
         if(!map.hasWall(this.position.x, this.position.y - 1)){
           this.position.y -= 1;
           this.direction = direction;
-        }else{
+        }else if(direction != this.direction){
           this.move(game, this.direction);
         }
         break;
@@ -536,4 +535,5 @@ class Game {
       });
     }
   }
+
 }

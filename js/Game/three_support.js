@@ -28,7 +28,7 @@ function init() {
     groundMat.color.setRGB(0.1, 0.1,0.1);
     var ground = new THREE.Mesh( groundGeo, groundMat );
     ground.rotation.x = -Math.PI/2;
-	  ground.position.y = -33;
+	  ground.position.y = 0;
     ground.receiveShadow = true;
 	  scene.add( ground );
 
