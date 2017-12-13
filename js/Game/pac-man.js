@@ -104,8 +104,7 @@ class Ghost {
     this.counter = 0;
   }
 
-  move(game){
-   
+  move(game){ 
     if (game.map.isLeftWarp(this.position.x, this.position.y)) {
         this.position.x = warp_r.x;
         this.position.y = warp_r.y;
@@ -385,6 +384,7 @@ class PacMan {
         this.position.x = warp_l.x;
         this.position.y = warp_l.y;
     }
+
     this.moving = true;
     switch(direction){
       case Direction.UP:
@@ -462,6 +462,7 @@ class Game {
     ];
     this.moveDirection = Direction.RIGHT;
     this.score = 0;
+    this.pause = false;
 
     this.deployments = {
       activeGhosts: [this.ghosts[0], this.ghosts[1]],
@@ -471,13 +472,13 @@ class Game {
     
 
   update(direction){
-    if(this.pacman.alive && !this.pacman.respawn){
+    if(this.pacman.alive && !this.pacman.respawn && this.score != 2660){
 
-      this.pacman.move(this, direction);
+      if (!this.pause) this.pacman.move(this, direction);
 
       for(var i = 0; i < this.ghosts.length; i += 1) {
         if(this.ghosts[i].alive) {
-            this.ghosts[i].move(this);
+            if (!this.pause) this.ghosts[i].move(this);
         }
         this.ghosts[i].updateCounter();
       }

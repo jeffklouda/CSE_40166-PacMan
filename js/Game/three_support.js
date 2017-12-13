@@ -6,6 +6,7 @@ var dots = [];
 var renderer;
 var counter = 0;
 var hLight;
+var canvas, ctx, scoreGeo, scoreMat, scoreTex, score;
 
 var SCREEN_WIDTH = window.innerWidth;
 var SCREEN_HEIGHT = window.innerHeight;
@@ -21,21 +22,24 @@ function init() {
     scene.add( new THREE.AmbientLight( 0x222233 ));
 
     // Setting the camera
-    camera = new THREE.PerspectiveCamera( 30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
+    camera = new THREE.PerspectiveCamera(30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
 
     // Hemisphere light
     hLight = new THREE.HemisphereLight(0x505050, 0.05);
     scene.add(hLight);
 
+    // Setting the sky
+    
+
     //Setting the ground
     var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
     var groundMat = new THREE.MeshPhongMaterial( {color: 0x000000, specular: 0xFFFFFF } );
-    groundMat.color.setRGB(0.1, 0.1,0.1);
+    groundMat.color.setRGB(0.09, 0.09, 0.09);
     var ground = new THREE.Mesh( groundGeo, groundMat );
     ground.rotation.x = -Math.PI/2;
-	  ground.position.y = 0;
+	ground.position.y = 0;
     ground.receiveShadow = true;
-	  scene.add( ground );
+	scene.add( ground );
 
     // Setting the renderer
     renderer = new THREE.WebGLRenderer( {antialias: true} );
@@ -45,7 +49,9 @@ function init() {
     renderer.gammaInput = true;
     renderer.gammaOutput = true;
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.BasicShadowMap;
     renderer.shadowMap.renderReverseSided = false;
+    document.body.appendChild(renderer.domElement);
 
     // Setting orbit controls
     var controls = new THREE.OrbitControls (camera, renderer.domElement);
@@ -68,6 +74,22 @@ function init() {
     loadObject('pinky_blue', 'models/ghost.obj', 'textures/blue.png');
     loadObject('clyde_blue', 'models/ghost.obj', 'textures/blue.png');
 
+    // Setting score
+    canvas = document.getElementById('canvas');
+    canvas.style.display = "none";
+    ctx = canvas.getContext('2d');
+
+    scoreTex = new THREE.Texture(canvas);
+    scoreMat = new THREE.MeshBasicMaterial({map: scoreTex});
+    scoreGeo = new THREE.PlaneGeometry(40, 10, 10);
+    score = new THREE.Mesh(scoreGeo, scoreMat);
+
+    score.scale.set(1, 1, 1);
+    score.position.set(23, 6, -3);
+    score.rotateX(-Math.PI / 3);
+    scene.add(score);
+
+    // Setting up objects
     setTimeout ( function() {
       setupObjects();
     }, 2000);
@@ -94,7 +116,7 @@ function setupObjects(){
   pacman0.position.y = 1.7;
   pacman1.position.y = 1.7;
   pacman2.position.y = 1.7;
-
+  
   inky.position.y = 1.7;
   inky.scale.set(1.4, 1.4, 1.4);
   inkyB.position.y = 1.7;
@@ -120,6 +142,8 @@ function setupObjects(){
   board.position.z = 24.753;
 
   board.castShadow = true;
+  board.receiveShadow = true;
+
   camera.position.set (board.position.x, board.position.y + 100, board.position.z + 50);
   camera.lookAt( board.position );
 
@@ -135,6 +159,13 @@ function loadObject(modelName, modelPath, texturePath) {
                 child.material = new THREE.MeshLambertMaterial;
                 child.material.side = THREE.DoubleSide;
                 child.material.map = texture;
+
+                if (modelName == 'board'){
+                    child.receiveShadow = true;
+                }
+                else{
+                    child.castShadow = true;
+                }
             }
         } );
 
@@ -147,11 +178,9 @@ function loadObject(modelName, modelPath, texturePath) {
 }
 
 window.onresize = function () {
-
-  camera.aspect = window.innerWidth / window.innerHeight;
-	camera.updateProjectionMatrix();
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
-
 }
 
 function createPointLight (size, add_color) {
@@ -164,6 +193,9 @@ function createPointLight (size, add_color) {
 }
 
 function animate() {
+    updateScore();
+    scoreTex.needsUpdate = true;
+
     requestAnimationFrame( animate );
     render();
 }
@@ -187,8 +219,11 @@ document.addEventListener('keypress', (event) => {
         case 'ArrowLeft':
             direction = Direction.LEFT;
             break;
+        case 'p':
+            myGame.pause = !myGame.pause;
+            break;
         default:
-
+            break;
     }
 });
 
@@ -203,7 +238,30 @@ function render() {
     drawPacMan();
 
     renderer.render( scene, camera );
+}
 
+function updateScore(){
+    ctx.font = '20pt Arial';
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    var text;
+    if (myGame.pacman.lives == 0){
+        text = 'G A M E   O V E R'; 
+    }
+    else if (myGame.score == 2660){
+        text = 'Y O U  W I N!';
+    }
+    else{
+        text = 'Lives: ' + myGame.pacman.lives + '      Score: ' + myGame.score;
+    }
+
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 }
 
 function drawGhosts(){
@@ -307,8 +365,15 @@ function drawPacMan(){
       break;
   }
   var coords = getPositionFromArray(x, y);
-  
-  switch (counter % 8) {
+ 
+  if (!myGame.pacman.alive || myGame.score == 2660 || myGame.pause){
+      pacman2.visible = true;
+      pacman2.position.x = coords.x;
+      pacman2.position.z = coords.y;
+      pacman2.rotation.y = angle;
+  }
+  else{
+      switch (counter % 8) {
       case 0:
       case 1:
       case 2:
@@ -324,6 +389,7 @@ function drawPacMan(){
           pacman0.position.z = coords.y;
           pacman0.rotation.y = angle;
           break;
+     }
   }
 }
 
@@ -348,12 +414,13 @@ function initDotsAndPellets(){
                 scene.add(dot);
                 row.push(dot);
             }else if(gameBoard[i][j].content == TileContents.PELLET){
-              var light = createPointLight(0.6, 0xFFFCD3);
+              var light = createLight(0xFFFCD3);       // 0.6
               var coord = getPositionFromArray(i, j);
-              scene.add(light);
               light.position.x = coord.x;
               light.position.z = coord.y;
               light.position.y = 1.7;
+
+              scene.add(light);
               row.push(light);
             }else{
               row.push(null);
@@ -363,12 +430,26 @@ function initDotsAndPellets(){
     }
 }
 
+function createLight(color){
+    var pointLight = new THREE.PointLight(color, 1, 30);
+    pointLight.castShadow = true;
+    pointLight.shadow.camera.near = camera.near;
+    pointLight.shadow.camera.far = camera.far;
+
+    var geometry = new THREE.SphereGeometry(0.6, 18, 10);
+    var material = new THREE.MeshBasicMaterial({color: color});
+    var sphere = new THREE.Mesh(geometry, material);
+    pointLight.add(sphere);
+
+    return pointLight;
+}
+
 function updateDotsAndPellets(){
   var gameBoard = myGame.map.board;
   for(var i = 0; i < dots.length; i+=1){
     for(var j = 0; j < dots[0].length; j+=1){
       if((gameBoard[i][j].content == TileContents.EMPTY) && (dots[i][j] != null)){
-        dots[i][j].visible = false;
+        scene.remove(dots[i][j]);
       }
     }
   }
