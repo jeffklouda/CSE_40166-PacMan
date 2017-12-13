@@ -221,8 +221,9 @@ function createPointLight (size, add_color) {
 }
 
 function animate() {
-    if (!(chomp.isPlaying || death.isPlaying || begin.isPlaying || ghosteat.isPlaying)) chomp.play();
-    
+    if (!(chomp.isPlaying || death.isPlaying || begin.isPlaying || ghosteat.isPlaying) &&
+        !myGame.pause) chomp.play();
+
     updateScore();
     scoreTex.needsUpdate = true;
 
@@ -363,8 +364,6 @@ function renderGhost(normalModel, blueModel, ghost){
       normalModel.visible = true;
     }
   }else{
-    chomp.stop();
-    ghosteat.play();
     blueModel.visible = false;
     normalModel.visible = false;
   }
@@ -415,8 +414,6 @@ function drawPacMan(){
       pacman2.position.x = coords.x;
       pacman2.position.z = coords.y;
       pacman2.rotation.y = angle;
-
-      chomp.stop();
   }
   else{
       switch (counter % 8) {
