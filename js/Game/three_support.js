@@ -1,10 +1,11 @@
 var scene, camera, controls, loader, textureLoader, board;
-var board, pacman0, pacman1, pacman2, inky, blinky, pinky, clyde;
+var board, pacman0, pacman1, pacman2, inky, blinky, pinky, clyde, inkyB, blinkyB, pinkyB, clydeB;
 var myGame, direction;
 var pellets = [];
 var dots = [];
 var renderer;
 var counter = 0;
+var hLight;
 
 var SCREEN_WIDTH = window.innerWidth;
 var SCREEN_HEIGHT = window.innerHeight;
@@ -21,6 +22,10 @@ function init() {
 
     // Setting the camera
     camera = new THREE.PerspectiveCamera( 30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
+
+    // Hemisphere light
+    hLight = new THREE.HemisphereLight(0x505050, 0.05);
+    scene.add(hLight);
 
     //Setting the ground
     var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
@@ -58,6 +63,10 @@ function init() {
     loadObject('blinky', 'models/ghost.obj', 'textures/blinky.png');
     loadObject('pinky', 'models/ghost.obj', 'textures/pinky.png');
     loadObject('clyde', 'models/ghost.obj', 'textures/clyde.png');
+    loadObject('inky_blue', 'models/ghost.obj', 'textures/blue.png');
+    loadObject('blinky_blue', 'models/ghost.obj', 'textures/blue.png');
+    loadObject('pinky_blue', 'models/ghost.obj', 'textures/blue.png');
+    loadObject('clyde_blue', 'models/ghost.obj', 'textures/blue.png');
 
     setTimeout ( function() {
       setupObjects();
@@ -74,6 +83,10 @@ function setupObjects(){
   blinky = scene.getObjectByName('blinky');
   pinky = scene.getObjectByName('pinky');
   clyde = scene.getObjectByName('clyde');
+  inkyB = scene.getObjectByName('inky_blue');
+  blinkyB = scene.getObjectByName('blinky_blue');
+  pinkyB = scene.getObjectByName('pinky_blue');
+  clydeB = scene.getObjectByName('clyde_blue');
 
   pacman0.scale.set(1.4, 1.4, 1.4);
   pacman1.scale.set(1.4, 1.4, 1.4);
@@ -84,15 +97,23 @@ function setupObjects(){
 
   inky.position.y = 1.7;
   inky.scale.set(1.4, 1.4, 1.4);
+  inkyB.position.y = 1.7;
+  inkyB.scale.set(1.4, 1.4, 1.4);
 
   blinky.position.y = 1.7;
   blinky.scale.set(1.4, 1.4, 1.4);
+  blinkyB.position.y = 1.7;
+  blinkyB.scale.set(1.4, 1.4, 1.4);
 
   pinky.position.y = 1.7;
   pinky.scale.set(1.4, 1.4, 1.4);
+  pinkyB.position.y = 1.7;
+  pinkyB.scale.set(1.4, 1.4, 1.4);
 
   clyde.position.y = 1.7;
   clyde.scale.set(1.4, 1.4, 1.4);
+  clydeB.position.y = 1.7;
+  clydeB.scale.set(1.4, 1.4, 1.4);
 
   board.scale.set(20, 20, 20);
   board.position.x = 23;
@@ -185,33 +206,45 @@ function render() {
 
 function drawGhosts(){
   myGame.ghosts.forEach(function(ghost){
-      var ghostCoords = getPositionFromArray (ghost.position.x, ghost.position.y);
       switch (ghost.name) {
           case GhostName.BLINKY:
-              blinky.visible = ghost.alive;
-              blinky.position.x = ghostCoords.x;
-              blinky.position.z = ghostCoords.y;
-              //TODO if(ghost.state == GhostState.BLUE) draw blue ghost
+              renderGhost(blinky, blinkyB, ghost);
               break;
           case GhostName.INKY:
-              inky.visible = ghost.alive; ;
-              inky.position.x = ghostCoords.x;
-              inky.position.z = ghostCoords.y;
+              renderGhost(inky, inkyB, ghost);
               break;
           case GhostName.CLYDE:
-              clyde.visible = ghost.alive;
-              clyde.position.x = ghostCoords.x;
-              clyde.position.z = ghostCoords.y;
+              renderGhost(clyde, clydeB, ghost);
               break;
           case GhostName.PINKY:
-              pinky.visible = ghost.alive;
-              pinky.position.x = ghostCoords.x;
-              pinky.position.z = ghostCoords.y;
+              renderGhost(pinky, pinkyB, ghost);
               break;
           default:
               break;
       }
   });
+}
+
+function renderGhost(normalModel, blueModel, ghost){
+  var ghostCoords = getPositionFromArray(ghost.position.x, ghost.position.y);
+
+  normalModel.position.x = ghostCoords.x;
+  normalModel.position.z = ghostCoords.y;
+  blueModel.position.x = ghostCoords.x;
+  blueModel.position.z = ghostCoords.y;
+
+  if(ghost.alive){
+    if(ghost.state == GhostState.BLUE){
+      blueModel.visible = true;
+      normalModel.visible = false;
+    }else{
+      blueModel.visible = false;
+      normalModel.visible = true;
+    }
+  }else{
+    blueModel.visible = false;
+    normalModel.visible = false;
+  }
 }
 
 function drawPacMan(){
