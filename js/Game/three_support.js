@@ -28,7 +28,7 @@ function init() {
     camera = new THREE.PerspectiveCamera(30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
 
     // Hemisphere light
-    hLight = new THREE.HemisphereLight(0x505050, 0.05);
+    hLight = new THREE.HemisphereLight(0.05);
     scene.add(hLight); 
 
     //Setting the ground
