@@ -56,6 +56,7 @@ function init() {
     // Setting orbit controls
     var controls = new THREE.OrbitControls (camera, renderer.domElement);
     controls.target.set(23, 0, 24.753);
+    controls.maxPolarAngle = Math.PI / 2;
     controls.update();
 
     // Load Models and textures
@@ -410,6 +411,7 @@ function drawPacMan(){
   var coords = getPositionFromArray(x, y);
  
   if (!myGame.pacman.alive || myGame.score == 2660 || myGame.pause){
+      chomp.stop();
       pacman2.visible = true;
       pacman2.position.x = coords.x;
       pacman2.position.z = coords.y;
