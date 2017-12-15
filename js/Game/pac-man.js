@@ -230,6 +230,7 @@ class Ghost {
   }
 
   loseLife(game){
+    this.alive = false;
     game.killAndDeploy(this);
   }
 
@@ -537,12 +538,14 @@ class Game {
     ghost.position.x = newGhost.position.x;
     ghost.position.y = newGhost.position.y;
     newGhost.state = GhostState.NORMAL;
+    newGhost.alive = true;
     newGhost.entering = false;
     newGhost.direction = Direction.RIGHT;
     newGhost.position.x = 11;
     newGhost.position.y = 13;
     ghost.state = GhostState.WAITING;
     ghost.direction = Direction.STAY;
+    //ghost.alive = true;
 
     this.deployments.activeGhosts[i] = newGhost;
     this.deployments.inactiveGhosts[j] = ghost;

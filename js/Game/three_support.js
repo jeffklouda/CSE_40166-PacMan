@@ -1,7 +1,7 @@
 var scene, camera, controls, loader, textureLoader, board;
 var board, pacman0, pacman1, pacman2, inky, blinky, pinky, clyde, inkyB, blinkyB, pinkyB, clydeB;
 var audioListener, audioLoader;
-var begin, chomp, death, ghosteat;
+var begin, chomp, death, ghosteat, intermission;
 var myGame;
 var direction = Direction.RIGHT;
 var pellets = [];
@@ -26,7 +26,7 @@ function init() {
 
     // Setting the camera
     camera = new THREE.PerspectiveCamera(30, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
-
+    
     // Hemisphere light
     hLight = new THREE.HemisphereLight(0.05);
     scene.add(hLight); 
@@ -82,6 +82,7 @@ function init() {
     loadSound('begin', 'audio/pacman_beginning.wav');
     loadSound('death', 'audio/pacman_death.wav');
     loadSound('ghosteat', 'audio/pacman_eatghost.wav');
+    loadSound('intermission', 'audio/pacman_intermission.wav');
 
     // Setting score
     canvas = document.getElementById('canvas');
@@ -110,7 +111,7 @@ function loadSound(name, soundFile){
     var sound = new THREE.Audio(audioListener);
 
     sound.load(soundFile);
-    if (name == 'chomp'){
+    if (name == 'chomp' || name == 'intermission'){
         sound.loop = true;
     }
     sound.name = name;
@@ -123,6 +124,7 @@ function setupSounds(){
     chomp = scene.getObjectByName('chomp');
     death = scene.getObjectByName('death');
     ghosteat = scene.getObjectByName('ghosteat');
+    intermission = scene.getObjectByName('intermission');
 }
 
 function setupObjects(){
@@ -222,8 +224,36 @@ function createPointLight (size, add_color) {
 }
 
 function animate() {
-    if (!(chomp.isPlaying || death.isPlaying || begin.isPlaying || ghosteat.isPlaying) &&
-        !myGame.pause) chomp.play();
+    var blueghosts = false;
+    myGame.ghosts.forEach(
+        function(ghost){
+            if (ghost.state == GhostState.BLUE){
+                blueghosts = true;
+            }
+        }
+    );
+
+    if (blueghosts){
+        if (chomp.isPlaying) chomp.stop();
+        if (!intermission.isPlaying) intermission.play();
+
+        myGame.ghosts.forEach(
+            function(ghost){
+                if (!ghost.alive){
+                    ghost.alive = true;
+                    eatghost();
+                }
+            }
+        );
+    }
+    else{
+        if (intermission.isPlaying) intermission.stop();
+    }
+
+    if (!(chomp.isPlaying || death.isPlaying || begin.isPlaying || ghosteat.isPlaying || intermission.isPlaying)
+        && !myGame.pause){
+        chomp.play();
+    };
 
     updateScore();
     scoreTex.needsUpdate = true;
@@ -356,17 +386,12 @@ function renderGhost(normalModel, blueModel, ghost){
   blueModel.position.x = ghostCoords.x;
   blueModel.position.z = ghostCoords.y;
 
-  if(ghost.alive){
-    if(ghost.state == GhostState.BLUE){
+  if(ghost.state == GhostState.BLUE){
       blueModel.visible = true;
       normalModel.visible = false;
-    }else{
+  }else{
       blueModel.visible = false;
       normalModel.visible = true;
-    }
-  }else{
-    blueModel.visible = false;
-    normalModel.visible = false;
   }
 }
 
@@ -509,6 +534,12 @@ function startup(){
 function death(){
     chomp.stop();
     death.play();
+    setTimeout(animate, 4000);
+}
+
+function eatghost(){
+    chomp.stop();
+    ghosteat.play();
     setTimeout(animate, 4000);
 }
 
