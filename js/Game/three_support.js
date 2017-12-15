@@ -284,6 +284,10 @@ document.addEventListener('keypress', (event) => {
         case 'p':
             myGame.pause = !myGame.pause;
             break;
+        case 'r':
+            camera.position.set (board.position.x, board.position.y + 100, board.position.z + 50);
+            camera.lookAt( board.position );
+            break;
         default:
             break;
     }
