@@ -236,8 +236,8 @@ function createPointLight (size, add_color) {
     return light;
 }
 
-function animate() {
-    // Handle camera updates
+function animate() { 
+    // Update camera
     if (followPacman || followInky || followBlinky || followPinky || followClyde){
         camera.position.set (target.x, target.y + 50, target.z + 25);
         camera.fov = 20;
@@ -315,8 +315,10 @@ document.addEventListener('keypress', (event) => {
             followBlinky = false;
             followPinky = false;
             followClyde = false;
+            firstperson = false;
 
             target = board.position;
+            pacman0.remove(camera);
             camera.position.set (target.x, target.y + 100, target.z + 50);
             camera.fov = 30;
             camera.updateProjectionMatrix();
@@ -328,6 +330,7 @@ document.addEventListener('keypress', (event) => {
             followBlinky = false;
             followPinky = false;
             followClyde = false;
+            firstperson = false;
             
             target = pacman0.position; 
             break;
@@ -337,6 +340,7 @@ document.addEventListener('keypress', (event) => {
             followBlinky = false;
             followPinky = false;
             followClyde = false;
+            firstperson = false;
 
             target = inky.position;
             break;
@@ -346,6 +350,7 @@ document.addEventListener('keypress', (event) => {
             followBlinky = true;
             followPinky = false;
             followClyde = false;
+            firstperson = false;
 
             target = blinky.position;
             break;
@@ -355,6 +360,7 @@ document.addEventListener('keypress', (event) => {
             followBlinky = false;
             followPinky = true;
             followClyde = false;
+            firstperson = false;
 
             target = pinky.position;
             break;
@@ -364,6 +370,7 @@ document.addEventListener('keypress', (event) => {
             followBlinky = false;
             followPinky = false;
             followClyde = true;
+            firstperson = false;
 
             target = clyde.position;
             break;
@@ -534,7 +541,7 @@ function drawPacMan(){
       break;
   }
   
-  var coords = getPositionFromArray(x, y);
+  var coords = getPositionFromArray(x, y); 
 
   if (followPacman){
       camera.position.set (target.x, target.y + 100, target.z + 50);
