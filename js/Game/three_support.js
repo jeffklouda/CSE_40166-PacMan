@@ -10,12 +10,13 @@ var renderer;
 var counter = 0;
 var hLight;
 var canvas, ctx, scoreGeo, scoreMat, scoreTex, score;
+var target;
+var followPacman = false, followInky = false, followBlinky = false, followPinky = false, followClyde = false;
 
 var SCREEN_WIDTH = window.innerWidth;
 var SCREEN_HEIGHT = window.innerHeight;
 
 function init() {
-
     var container = document.getElementById('container');
 
     // Setting the scene
@@ -108,18 +109,22 @@ function init() {
 }
 
 function loadSound(name, soundFile){
+    // Create sound
     var sound = new THREE.Audio(audioListener);
 
+    // Load sound and set attributes
     sound.load(soundFile);
     if (name == 'chomp' || name == 'intermission'){
         sound.loop = true;
     }
     sound.name = name;
 
+    // Add sound to scene
     scene.add(sound);
 }
 
 function setupSounds(){
+    // Get handles to audio objects
     begin = scene.getObjectByName('begin');
     chomp = scene.getObjectByName('chomp');
     death = scene.getObjectByName('death');
@@ -128,6 +133,7 @@ function setupSounds(){
 }
 
 function setupObjects(){
+  // Get handles to model objects
   board = scene.getObjectByName('board');
   pacman0 = scene.getObjectByName('pacman0');
   pacman1 = scene.getObjectByName('pacman1');
@@ -141,13 +147,14 @@ function setupObjects(){
   pinkyB = scene.getObjectByName('pinky_blue');
   clydeB = scene.getObjectByName('clyde_blue');
 
+  // Set objects initial positions, scales, and orientations
   pacman0.scale.set(1.4, 1.4, 1.4);
   pacman1.scale.set(1.4, 1.4, 1.4);
   pacman2.scale.set(1.4, 1.4, 1.4);
   pacman0.position.y = 1.7;
   pacman1.position.y = 1.7;
   pacman2.position.y = 1.7;
-  
+
   inky.position.y = 1.7;
   inky.scale.set(1.4, 1.4, 1.4);
   inkyB.position.y = 1.7;
@@ -171,17 +178,22 @@ function setupObjects(){
   board.scale.set(20, 20, 20);
   board.position.x = 23;
   board.position.z = 24.753;
-
+  
   board.castShadow = true;
   board.receiveShadow = true;
 
-  camera.position.set (board.position.x, board.position.y + 100, board.position.z + 50);
-  camera.lookAt( board.position );
+  // Set focus of camera
+  target = board.position;
 
+  camera.position.set (target.x, target.y + 100, target.z + 50);
+  camera.lookAt( target );
+
+  // Add dots and pellets to board
   initDotsAndPellets();
 }
 
 function loadObject(modelName, modelPath, texturePath) {
+    // Load objects and textures from files
     loader.load( modelPath, function ( object ) {
         var texture = textureLoader.load( texturePath );
         object.traverse( function ( child ) {
@@ -200,6 +212,7 @@ function loadObject(modelName, modelPath, texturePath) {
             }
         } );
 
+        // Initialize object
         object.position.x = 0;
         object.position.y = 0;
         object.position.z = 0;
@@ -224,6 +237,15 @@ function createPointLight (size, add_color) {
 }
 
 function animate() {
+    // Handle camera updates
+    if (followPacman || followInky || followBlinky || followPinky || followClyde){
+        camera.position.set (target.x, target.y + 50, target.z + 25);
+        camera.fov = 20;
+        camera.updateProjectionMatrix();
+        camera.lookAt( target );
+    }
+
+    // Check for any blue ghosts
     var blueghosts = false;
     myGame.ghosts.forEach(
         function(ghost){
@@ -233,6 +255,7 @@ function animate() {
         }
     );
 
+    // Play appropriate music for current state of game
     if (blueghosts){
         if (chomp.isPlaying) chomp.stop();
         if (!intermission.isPlaying) intermission.play();
@@ -255,9 +278,11 @@ function animate() {
         chomp.play();
     };
 
+    // Update score
     updateScore();
     scoreTex.needsUpdate = true;
 
+    // Animate
     requestAnimationFrame( animate );
     render();
 }
@@ -265,28 +290,82 @@ function animate() {
 document.addEventListener('keypress', (event) => {
     var directionKey = event.key;
     switch(directionKey) {
-        case 'w':
+        case 'w':       // Move up
         case 'ArrowUp':
             direction = Direction.UP;
             break;
-        case 'd':
+        case 'd':       // Move right
         case 'ArrowRight':
             direction = Direction.RIGHT;
             break;
-        case 's':
+        case 's':       // Move down
         case 'ArrowDown':
             direction = Direction.DOWN;
             break;
         case 'a':
-        case 'ArrowLeft':
+        case 'ArrowLeft':       // Move left
             direction = Direction.LEFT;
             break;
-        case 'p':
+        case 'p':       // Pause game
             myGame.pause = !myGame.pause;
             break;
-        case 'r':
-            camera.position.set (board.position.x, board.position.y + 100, board.position.z + 50);
-            camera.lookAt( board.position );
+        case 'r':       // Reset camera
+            followPacman = false;
+            followInky = false;
+            followBlinky = false;
+            followPinky = false;
+            followClyde = false;
+
+            target = board.position;
+            camera.position.set (target.x, target.y + 100, target.z + 50);
+            camera.fov = 30;
+            camera.updateProjectionMatrix();
+            camera.lookAt( target );
+            break;
+        case 'm':       // Have camera follow pacman
+            followPacman = true;
+            followInky = false;
+            followBlinky = false;
+            followPinky = false;
+            followClyde = false;
+            
+            target = pacman0.position; 
+            break;
+        case 'i':       // Have camear follow inky
+            followPacman = false;
+            followInky = true;
+            followBlinky = false;
+            followPinky = false;
+            followClyde = false;
+
+            target = inky.position;
+            break;
+        case 'b':       // Have camera follow blinky
+            followPacman = false;
+            followInky = false;
+            followBlinky = true;
+            followPinky = false;
+            followClyde = false;
+
+            target = blinky.position;
+            break;
+        case 'k':       // Have camera follow pinky
+            followPacman = false;
+            followInky = false;
+            followBlinky = false;
+            followPinky = true;
+            followClyde = false;
+
+            target = pinky.position;
+            break;
+        case 'y':       // Have camera follow clyde
+            followPacman = false;
+            followInky = false;
+            followBlinky = false;
+            followPinky = false;
+            followClyde = true;
+
+            target = clyde.position;
             break;
         default:
             break;
@@ -296,8 +375,10 @@ document.addEventListener('keypress', (event) => {
 function render() {
     counter++;
     if (counter%4 == 0){
+      // Remove eaten dots and pellts
       updateDotsAndPellets();
 
+      // Handle pacman depending on whether he is dead or alive
       if (myGame.pacman.respawn){
           chomp.stop();
           death.play();
@@ -308,12 +389,16 @@ function render() {
       }
     }
 
+    // Handle game depending on whether game is over or paused
     if (!(myGame.pause || myGame.score == 2660)){
+        // Game is in action, keep drawing
         drawGhosts();
         drawPacMan();
     }
     else{
-        chomp.stop();
+        // Game is stopped, do not draw and stop sounds
+        if (chomp.isPlaying) chomp.stop();
+        if (intermission.isPlaying) intermission.stop();
     }
 
     renderer.render( scene, camera );
@@ -365,10 +450,12 @@ function drawGhosts(){
 }
 
 function renderGhost(normalModel, blueModel, ghost){
+  // Get current ghost position
   var rem = counter % 4;
   var x = ghost.position.x;
   var y = ghost.position.y;
 
+  // Change ghost position
   switch (ghost.direction) {
     case Direction.UP:
         x -= rem * 0.25;
@@ -383,6 +470,8 @@ function renderGhost(normalModel, blueModel, ghost){
         y += rem * 0.25;
         break;
   }
+  
+  // Update ghost position
   var ghostCoords = getPositionFromArray(x,y);
 
   normalModel.position.x = ghostCoords.x;
@@ -390,6 +479,7 @@ function renderGhost(normalModel, blueModel, ghost){
   blueModel.position.x = ghostCoords.x;
   blueModel.position.z = ghostCoords.y;
 
+  // Update ghost appearance
   if(ghost.state == GhostState.BLUE){
       blueModel.visible = true;
       normalModel.visible = false;
@@ -400,14 +490,18 @@ function renderGhost(normalModel, blueModel, ghost){
 }
 
 function drawPacMan(){
+  // Initialize variables
   var angle = 0;
   pacman0.visible = false;
   pacman1.visible = false;
   pacman2.visible = false;
+
+  // Get current pacman position
   var rem = counter % 4;
   var x = myGame.pacman.position.x;
   var y = myGame.pacman.position.y; 
 
+  // Change pacman position
   if (myGame.pacman.direction != Direction.STAY) {
   switch(myGame.pacman.direction){
     case Direction.UP:
@@ -424,6 +518,8 @@ function drawPacMan(){
       break;
   }
   }
+  
+  // Change pacman angle
   switch(myGame.pacman.lastDirection){
     case Direction.UP:
       angle = (Math.PI/180) * 90;
@@ -437,10 +533,23 @@ function drawPacMan(){
     case Direction.RIGHT:
       break;
   }
+  
   var coords = getPositionFromArray(x, y);
- 
+
+  if (followPacman){
+      camera.position.set (target.x, target.y + 100, target.z + 50);
+      camera.lookAt( target );
+      
+      pacman0.position.x = coords.x;
+      pacman0.position.z = coords.y;
+      pacman0.rotation.y = angle;
+  }
+
+  // Update current pacman position and appearance
   if (!myGame.pacman.alive || myGame.score == 2660 || myGame.pause){
-      chomp.stop();
+      if (chomp.isPlaying) chomp.stop();
+      if (intermission.isPlaying) intermission.stop();
+
       pacman2.visible = true;
       pacman2.position.x = coords.x;
       pacman2.position.z = coords.y;
