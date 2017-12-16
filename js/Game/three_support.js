@@ -258,7 +258,7 @@ function animate() {
     // Play appropriate music for current state of game
     if (blueghosts){
         if (chomp.isPlaying) chomp.stop();
-        if (!intermission.isPlaying) intermission.play();
+        if (!intermission.isPlaying && !myGame.pause) intermission.play();
 
         myGame.ghosts.forEach(
             function(ghost){
